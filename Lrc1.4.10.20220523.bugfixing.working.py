@@ -8,9 +8,15 @@ import typing
 
 # import _io
 
+
 # constant
+
+CONVERSION_TIME_60: int = 60
+CONVERSION_TIME_100: int = 100
+CONVERSION_TIME_1000: int = 1000
+
 # 旧版  r'\[?\d*:\d{1,2}\.\d*]?.*'
-general_match_for_both_info_and_lyric: Pattern[typing.AnyStr]\
+general_match_for_both_info_and_lyric: Pattern[typing.AnyStr] \
     = re.compile(r'\['
                  r'.*'  # 规范里面说了，分钟位和秒钟位必须有数字
                  r':'  # 分钟 秒钟 之间必须有冒号 info也是冒号
@@ -75,7 +81,7 @@ general_match_for_info_right_bracket_missing: Pattern[typing.AnyStr] \
                  r']?')
 
 # Constant:
-general_match_for_lyric_standard_form: Pattern[typing.AnyStr]\
+general_match_for_lyric_standard_form: Pattern[typing.AnyStr] \
     = re.compile(r'\['
 
                  r'('  # 组一开始，代表分钟
@@ -97,8 +103,7 @@ general_match_for_lyric_standard_form: Pattern[typing.AnyStr]\
                  r']'  # 必须关闭 括号
                  r'.*')
 
-
-general_match_for_lyric: Pattern[typing.AnyStr]\
+general_match_for_lyric: Pattern[typing.AnyStr] \
     = re.compile(r'\['
 
                  r'('  # 组一开始，代表分钟
@@ -121,7 +126,7 @@ general_match_for_lyric: Pattern[typing.AnyStr]\
                  r']'  # 必须关闭 括号
                  r'.*')
 
-general_match_for_lyric_left_bracket_missing: Pattern[typing.AnyStr]\
+general_match_for_lyric_left_bracket_missing: Pattern[typing.AnyStr] \
     = re.compile(r'\[?'
 
                  r'('  # 组一开始，代表分钟
@@ -144,7 +149,7 @@ general_match_for_lyric_left_bracket_missing: Pattern[typing.AnyStr]\
                  r']'  # 必须关闭 括号
                  r'.*')
 
-general_match_for_lyric_right_bracket_missing: Pattern[typing.AnyStr]\
+general_match_for_lyric_right_bracket_missing: Pattern[typing.AnyStr] \
     = re.compile(r'\['
 
                  r'('  # 组一开始，代表分钟
@@ -307,10 +312,10 @@ class Lyric_file:
         # 为后面的保存函数做准备    ##保存函数无法保存说文件已经被关闭的问题已经被解决
         # 这些是元组（目前未查明原因）
         # 需要补齐类型注解
-        self.open_mode = mode,
-        self.open_buffering = buffering,
-        self.open_encoding = encoding,
-        self.open_errors = errors,
+        self.open_mode: tuple[str] = mode,
+        self.open_buffering: tuple[int] = buffering,
+        self.open_encoding: tuple[str] = encoding,
+        self.open_errors: tuple = errors,
         self.open_newline = newline,
         self.open_closefd = closefd,
         self.open_opener = opener
@@ -322,7 +327,6 @@ class Lyric_file:
         elif type(lrc_file) == list:
             self.input_type = "list"
         else:
-            self.input_type = "str"
             self.input_type = "str"
 
         # 判断是否类型正确
@@ -643,7 +647,7 @@ class Lyric_file:
         This function not only fill the blank lyric into '',
         but also do a further split in each element.
 
-        It also delete the blank line automatically.
+        It also deletes the blank line automatically.
         
         output:
             [[time,lyric],[time,lyric],[time,lyric],[time,lyric]...]
@@ -1406,7 +1410,7 @@ class Lyric_file:
                 len_of_millisecond = This_time_tab.len_of_millisecond
 
             elif This_time_tab.len_of_millisecond > Next_time_tab.len_of_millisecond:
-                next_time_stamp = int(str(next_time_stamp).ljust( \
+                next_time_stamp = int(str(next_time_stamp).ljust(
                     This_time_tab.len_of_millisecond,
                     '0'))
 
@@ -1414,7 +1418,7 @@ class Lyric_file:
 
             elif This_time_tab.len_of_millisecond < Next_time_tab.len_of_millisecond:
                 #
-                this_time_stamp = int(str(this_time_stamp).ljust( \
+                this_time_stamp = int(str(this_time_stamp).ljust(
                     Next_time_tab.len_of_millisecond,
                     '0'))
 
@@ -1425,10 +1429,10 @@ class Lyric_file:
                 next_time_stamp = next_time_stamp + int(10 ** len_of_millisecond * 2.5)
 
             # 计算歌词持续显示的结束时间
-            middle_time_stamp = this_time_stamp + \
-                                (next_time_stamp - this_time_stamp) * \
-                                numerator / \
-                                denominator
+            middle_time_stamp: float = this_time_stamp + \
+                                       (next_time_stamp - this_time_stamp) * \
+                                       numerator / \
+                                       denominator
 
             this_time_list = This_time_tab.time_list
             # This_time_tab是Time_tab的实例化对象
@@ -1488,7 +1492,7 @@ class Lyric_file:
             ##########需要和os.path.split os.path.splitext 比较一下速度
             name: list
             name = re.split(r'\\|/', self.filename)[-1]
-            name = re.split(r'../../../Python/C-python', name)
+            # name = re.split(r'../../../Python/C-python', name)
             if len(name) != 1:
                 name.pop()
                 real_name = ''
@@ -1732,7 +1736,7 @@ class Lyric_file:
         self.file.close()
 
 
-class Time_tab():
+class Time_tab:
 
     def __init__(self, tab=None):
 
@@ -1750,6 +1754,12 @@ class Time_tab():
             self.__pre_separating(tab)
 
         pass
+
+    def __int__(self):
+        return self.time_stamp
+
+    def __str__(self):
+        return self.tab
 
     def __pre_separating(self, tab):
         # 新建列表，浅拷贝
@@ -1772,10 +1782,13 @@ class Time_tab():
         self.milliseconds = self.time_list[2]
         self.len_of_millisecond = len(self.milliseconds)
 
+        self.time_stamp = self.minutes * CONVERSION_TIME_60 * CONVERSION_TIME_1000 \
+                          + self.seconds * CONVERSION_TIME_1000 \
+                          + self.milliseconds
         # self.bracket =
 
     def convert_to_time_stamp(self, time_tab_input=None, len_of_millisecond=2) -> int:
-        if time_tab_input == None:
+        if time_tab_input is None:
             # 列表切片，浅拷贝
             time_list = self.time_list[:]
         else:
@@ -1793,7 +1806,7 @@ class Time_tab():
 
     def convert_to_tab(self, time_stamp: int, len_of_millisecond: int = 2, with_bracket: bool = True) -> str:
         '''
-        It is a classmethod. It convert the time stamp of time tag in to a tag.
+        It is a classmethod. It converts the time stamp of time tag in to a tag.
         '''
         minutes: str
         seconds: str
