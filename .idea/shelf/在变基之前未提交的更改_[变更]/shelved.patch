@@ -1,0 +1,17 @@
+Index: Lrc1.4.10.20220523.bugfixing.working.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Lrc1.4.10.20220523.bugfixing.working.py b/Lrc1.4.10.20220523.bugfixing.working.py
+--- a/Lrc1.4.10.20220523.bugfixing.working.py	
++++ b/Lrc1.4.10.20220523.bugfixing.working.py	
+@@ -1,7 +1,7 @@
+ import re  # as re
+ # import sf  # as sf
+ # import datetime
+-# import os
++import os
+ import math
+ from typing import Optional
+ from typing import Union
