@@ -1,9 +1,10 @@
 import re  # as re
-import sf  # as sf
+# import sf  # as sf
 import os
 from typing import Optional
 from typing import Union
 from typing import Pattern
+from typing import Final
 import typing
 
 # import _io
@@ -1738,6 +1739,8 @@ class Lyric_file:
 
 class Time_tab:
 
+    Final[]
+
     def __init__(self, tab=None):
 
         self.tab = tab
@@ -1745,9 +1748,9 @@ class Time_tab:
         self.tag = None
 
         self.time_list = None
-        self.minutes = None
-        self.seconds = None
-        self.milliseconds = None
+        self.minutes_str = None
+        self.seconds_str = None
+        self.milliseconds_str = None
         self.len_of_millisecond = None
 
         if tab != None:
@@ -1786,6 +1789,13 @@ class Time_tab:
                           + self.seconds * CONVERSION_TIME_1000 \
                           + self.milliseconds
         # self.bracket =
+
+    def get_stamp(self) -> Optional[int]:
+        pass
+
+    def get_formatted_tab(self) -> Optional[str]:
+        pass
+
 
     def convert_to_time_stamp(self, time_tab_input=None, len_of_millisecond=2) -> int:
         if time_tab_input is None:
