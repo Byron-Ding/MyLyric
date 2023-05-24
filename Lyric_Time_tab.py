@@ -38,18 +38,36 @@ class Lyric_Time_tab:
     # 严格模式时间标签的正则表达式
     TIME_TAB_EACH_LINE_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
                                                                        r'(?P<minutes>\d{2})'
-                                                                       r'(?P<colon_1>:)'
+                                                                       r'(?P<minutes_seconds_seperator>:)'
                                                                        r'(?P<seconds>\d{2})'
                                                                        r'(?P<dot_1>\.)'
                                                                        r'(?P<milliseconds>\d{2})'
-                                                                       r'(?P<right_bracket>\])')
+                                                                       r'(?P<right_bracket>])')
     # 普通模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_NORMAL_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d{2})(:)(\d{2})([:.])(\d{2,3})(])')
+    TIME_TAB_EACH_LINE_NORMAL_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                       r'(?P<minutes>\d{2})'
+                                                                       r'(?P<minutes_seconds_seperator>:)'
+                                                                       r'(?P<seconds>\d{2})'
+                                                                       r'(?P<dot_1>[:.])'
+                                                                       r'(?P<milliseconds>\d{2,3})'
+                                                                       r'(?P<right_bracket>])')
 
     # 宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d+)(:)(\d+)([:.])?(\d*)?(])')
+    TIME_TAB_EACH_LINE_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                      r'(?P<minutes>\d*)'
+                                                                      r'(?P<minutes_seconds_seperator>:)'
+                                                                      r'(?P<seconds>\d*)'
+                                                                      r'(?P<dot_1>[:.])?'
+                                                                      r'(?P<milliseconds>\d*)?'
+                                                                      r'(?P<right_bracket>])')
     # 非常宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)?(\d+)(:)(\d+)([:.])?(\d*)?(])?')
+    TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)?'
+                                                                           r'(?P<minutes>\d*)'
+                                                                           r'(?P<minutes_seconds_seperator>:)'
+                                                                           r'(?P<seconds>\d*)'
+                                                                           r'(?P<dot_1>[:.])?'
+                                                                           r'(?P<milliseconds>\d*)?'
+                                                                           r'(?P<right_bracket>])?')
 
     # 正则表达式列表
     TIME_TAB_EACH_LINE_REGREX_LIST: list = [TIME_TAB_EACH_LINE_STRICT_REGREX,
@@ -59,13 +77,37 @@ class Lyric_Time_tab:
 
     # 歌词每个字的时间标签的正则表达式 <>
     # 严格模式时间标签的正则表达式
-    TIME_TAB_EACH_WORD_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(<)(\d{2})(:)(\d{2})(\.)(\d{2})(>)')
+    TIME_TAB_EACH_WORD_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                       r'(?P<minutes>\d{2})'
+                                                                       r'(?P<minutes_seconds_seperator>:)'
+                                                                       r'(?P<seconds>\d{2})'
+                                                                       r'(?P<dot_1>\.)'
+                                                                       r'(?P<milliseconds>\d{2})'
+                                                                       r'(?P<right_bracket>>)')
     # 普通模式时间标签的正则表达式
-    TIME_TAB_EACH_WORD_NORMAL_REGREX: Final[Pattern[str]] = re.compile(r'(<)(\d{2})(:)(\d{2})([:.])(\d{2,3})(>)')
+    TIME_TAB_EACH_WORD_NORMAL_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                       r'(?P<minutes>\d{2})'
+                                                                       r'(?P<minutes_seconds_seperator>:)'
+                                                                       r'(?P<seconds>\d{2})'
+                                                                       r'(?P<dot_1>[:.])'
+                                                                       r'(?P<milliseconds>\d{2,3})'
+                                                                       r'(?P<right_bracket>>)')
     # 宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_WORD_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(<)(\d*)(:)(\d*)([:.])?(\d*)?(>)')
+    TIME_TAB_EACH_WORD_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                      r'(?P<minutes>\d*)'
+                                                                      r'(?P<minutes_seconds_seperator>:)'
+                                                                      r'(?P<seconds>\d*)'
+                                                                      r'(?P<dot_1>[:.])?'
+                                                                      r'(?P<milliseconds>\d*)?'
+                                                                      r'(?P<right_bracket>>)')
     # 非常宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_WORD_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(<)?(\d*)(:)(\d*)([:.])?(\d*)?(>)?')
+    TIME_TAB_EACH_WORD_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)?'
+                                                                           r'(?P<minutes>\d*)'
+                                                                           r'(?P<minutes_seconds_seperator>:)'
+                                                                           r'(?P<seconds>\d*)'
+                                                                           r'(?P<dot_1>[:.])?'
+                                                                           r'(?P<milliseconds>\d*)?'
+                                                                           r'(?P<right_bracket>>)?')
 
     # 正则表达式列表
     TIME_TAB_EACH_WORD_REGREX_LIST: list = [TIME_TAB_EACH_WORD_STRICT_REGREX,
@@ -303,19 +345,19 @@ class Lyric_Time_tab:
             self.time_list = self.match_result.groups()
 
             # 添加到类的属性中
-            self.brackets = self.time_list[0] + self.time_list[-1]
-            self.minutes_str = self.time_list[1]
+            self.brackets = self.match_result.group("left_bracket") + self.match_result.group("right_bracket")
+            self.minutes_str = self.match_result.group("minutes")
             # 如果有分钟位，分钟位不足两位，左边补零
             self.minutes_str = self.minutes_str.rjust(2, '0')
-            self.minutes_seconds_seperator = self.time_list[2]
+            self.minutes_seconds_seperator = self.match_result.group("minutes_seconds_seperator")
 
-            self.seconds_str = self.time_list[3]
+            self.seconds_str = self.match_result.group("seconds")
             # 如果有秒位，秒位不足两位，左边补零
             self.seconds_str = self.seconds_str.rjust(2, '0')
 
-            self.seconds_milliseconds_seperator = self.time_list[4]
+            self.seconds_milliseconds_seperator = self.match_result.group("seconds_milliseconds_seperator")
             # 如果有毫秒位，毫秒位不足三位，右边补零
-            self.milliseconds_str = self.time_list[5]
+            self.milliseconds_str = self.match_result.group("milliseconds")
 
             # 如果有毫秒位，毫秒位不足三位，右边补零
             if self.milliseconds_str is not None:
@@ -621,6 +663,7 @@ class Lyric_Time_tab:
                                                                     brackets,
                                                                     seperator)
 
+    # 返回自身
     def shift_time(self,
                    minutes: int,
                    seconds: int,
