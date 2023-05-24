@@ -186,10 +186,10 @@ def convert_to_int(time_tag: str) -> int:
         Time tag in string form
         字符串形式的时间标签
     :return:
-        Return a time tab in millisecond form
+        Return a time original_tab in millisecond form
         返回时间戳（毫秒计数）
 
-    This function help to convert the time tab in lrc file into integer with 10×milliseconds.
+    This function help to convert the time original_tab in lrc file into integer with 10×milliseconds_str.
 
     这个方法转换LRC的时间戳到整数
 
@@ -199,7 +199,7 @@ def convert_to_int(time_tag: str) -> int:
 
     请尽量使用标准时间戳格式
 
-    input must be [ : . ] or without bracket
+    input must be [ : . ] or without brackets
 
     输入必须符合规范 [ : . ]
     """
@@ -229,11 +229,11 @@ def convert_to_tab(time_stamp_milliseconds: int, with_bracket: bool = False,
                    whether_decimal_place3: bool = False) -> str:
     """
     :param time_stamp_milliseconds:
-        Input milliseconds time stamp;
+        Input milliseconds_str time stamp;
         整数毫秒时间戳
 
     :param with_bracket:
-        Whether there is a bracket after conversion;
+        Whether there is a brackets after conversion;
         转换完是否有中括号
 
     :param whether_decimal_place3:
@@ -241,14 +241,14 @@ def convert_to_tab(time_stamp_milliseconds: int, with_bracket: bool = False,
         毫秒位是否保留三位整数（标准格式是两位）
 
     :return:
-        Return a time tab in string form.
+        Return a time original_tab in string form.
         返回一个时间标签字符串
 
-    This function help to convert the integer with milliseconds into the time tab in lrc file.
+    This function help to convert the integer with milliseconds_str into the time original_tab in lrc file.
 
     这个方法将时间转换 以毫秒计数的时间戳到时间标签
 
-    This function is only used in the tab of the standard form.
+    This function is only used in the original_tab of the standard form.
 
     这个function仅支持标准格式
 
@@ -281,7 +281,7 @@ def convert_to_tab(time_stamp_milliseconds: int, with_bracket: bool = False,
     str_seconds = "{time:0>2}".format(time=time_stamp_milliseconds // 1000 % 60)
     str_millisecond = "{time:0>2}".format(time=time_milliseconds)
 
-    # print(minutes, seconds, milliseconds)
+    # print(minutes_str, seconds_str, milliseconds_str)
 
     time = str_minutes + ':' + str_seconds + '.' + str_millisecond
 
@@ -634,7 +634,7 @@ class Lyric_file:
                     self.standard_form.add('3 decimal places')
 
                     if re.fullmatch(r'\[\d{3,}:\d*\.\d*].*', i) is not None:
-                        self.standard_form.add('larger than 99 minutes')
+                        self.standard_form.add('larger than 99 minutes_str')
                     else:
                         self.standard_form.add('Other not standard form')
 
@@ -643,7 +643,7 @@ class Lyric_file:
         """
         'lyric_list' must be a list of lyric lines splitted by lines.(A primary list)
         
-        with_time_bracket means whether the time tab having bracket in output.
+        with_time_bracket means whether the time original_tab having brackets in output.
         
         This function not only fill the blank lyric into '',
         but also do a further split in each element.
@@ -704,13 +704,13 @@ class Lyric_file:
 
         |||ATTENTION The format of lyric_list must be the secondary list!!|||
 
-        ignore_blank means whether ignore the blank lyirc which has only a time tab.
+        ignore_blank means whether ignore the blank lyirc which has only a time original_tab.
 
-        numerator/denominator is the way to calculate the new translated time tab.
+        numerator/denominator is the way to calculate the new translated time original_tab.
 
-        line_shift is the start line of lyric, in order to avoid the head information but with time tab.
+        line_shift is the start line of lyric, in order to avoid the head information but with time original_tab.
 
-        last_limit is the last time tab to calculate(in milliseconds).
+        last_limit is the last time original_tab to calculate(in milliseconds_str).
 
         (without the basic information)
         lyric_list = [[time,lyric],[time,lyric],[time,lyric]...]
@@ -787,7 +787,7 @@ class Lyric_file:
                                  with_bracket=True) -> list:
 
         """
-        It is used to format the time tab having un-standard format,
+        It is used to format the time original_tab having un-standard format,
         such as [xx:xx.xxx]
 
         It return a secondary list.
@@ -939,7 +939,7 @@ class Lyric_file:
 
     def simple_lrc(self, lyric=None) -> list:
         '''
-        It simplify the whole lyric file by conbining same lyrics but having different time tab.
+        It simplify the whole lyric file by conbining same lyrics but having different time original_tab.
         The 'lyric' must be in format:(primary list)
             lyric = [lyric_line,lyric_line,lyric_line...]
 
@@ -1000,11 +1000,11 @@ class Lyric_file:
         The lyric should be a first ordered list with each line of the lyric as an element without the basic information.
         lyric = [[lyric_line],[lyric_line],[lyric_line]...]
 
-        insert_after_lastly is the way of adding the same lyric into the right order while having the same time tab,
+        insert_after_lastly is the way of adding the same lyric into the right order while having the same time original_tab,
 
         which has three choises:
-            None means that insert in the place which the lyric has the same time tab.
-            'after' means that insert in the place which the lyric has the same time tab +1.
+            None means that insert in the place which the lyric has the same time original_tab.
+            'after' means that insert in the place which the lyric has the same time original_tab +1.
             '←' means that insert in the place if the last way of finding is towards the smaller place, then +1.
             '→' means that insert in the place if the last way of finding is towards the larger place, then +1.
 
@@ -1226,7 +1226,7 @@ class Lyric_file:
         '''
         The lyric should be a secondary list.
         
-        It return a list with all time tab.
+        It return a list with all time original_tab.
         '''
 
         pure_time_tab_list: list
