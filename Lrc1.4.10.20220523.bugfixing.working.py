@@ -5,7 +5,7 @@ from typing import Optional
 from typing import Union
 from typing import Pattern
 import typing
-import Time_tab
+import Lyric_Time_tab
 
 # import _io
 
@@ -179,121 +179,11 @@ def version():
     return v
 
 
-# 或许可以 re.compile(r'\[?\d*:\d{1,2}\.\d*]?')
-def convert_to_int(time_tag: str) -> int:
-    """
-    param time_tag:
-        Time tag in string form
-        字符串形式的时间标签
-    :return:
-        Return a time original_tab in millisecond form
-        返回时间戳（毫秒计数）
-
-    This function help to convert the time original_tab in lrc file into integer with 10×milliseconds_str.
-
-    这个方法转换LRC的时间戳到整数
-
-    This function is used in the tag of the standard form. if it is not in standard form,
-
-    please use the one in the Time_tab object.
-
-    请尽量使用标准时间戳格式
-
-    input must be [ : . ] or without brackets
-
-    输入必须符合规范 [ : . ]
-    """
-
-    minutes: int
-    seconds: int
-    milliseconds: int
-    time_list_in_tab: list
-
-    time_list_in_tab = [i for i in re.split(r'[\[\]:.]', time_tag) if i != '']
-
-    '''
-    后期改进
-    注： 如果分钟大于3位建议报warning然后程序继续运行
-    '''
-
-    minutes = int(time_list_in_tab[0])
-    seconds = int(time_list_in_tab[1])
-    milliseconds = int(time_list_in_tab[2])
-
-    time: int = (minutes * 60 * 100) + (seconds * 100) + milliseconds
-
-    return time
-
-
-def convert_to_tab(time_stamp_milliseconds: int, with_bracket: bool = False,
-                   whether_decimal_place3: bool = False) -> str:
-    """
-    :param time_stamp_milliseconds:
-        Input milliseconds_str time stamp;
-        整数毫秒时间戳
-
-    :param with_bracket:
-        Whether there is a brackets after conversion;
-        转换完是否有中括号
-
-    :param whether_decimal_place3:
-        Whether keep 3 decimal place in the millisecond position.(The standard is 2)
-        毫秒位是否保留三位整数（标准格式是两位）
-
-    :return:
-        Return a time original_tab in string form.
-        返回一个时间标签字符串
-
-    This function help to convert the integer with milliseconds_str into the time original_tab in lrc file.
-
-    这个方法将时间转换 以毫秒计数的时间戳到时间标签
-
-    This function is only used in the original_tab of the standard form.
-
-    这个function仅支持标准格式
-
-    If it is not in standard form, please use the one in the Time_tab object.
-
-    如果非标准格式，请使用 Time_tab 类（待完善）
-
-    input must be a integer
-
-    输入必须是整数
-    """
-
-    if type(time_stamp_milliseconds) != int:
-        raise TypeError('time_milliseconds should be integer')
-
-    minutes: str
-    seconds: str
-    millisecond: str
-    time: str
-
-    # 如果不是三位小数，毫秒位，直接 // 10 保留两位小数
-    if not whether_decimal_place3:
-        time_milliseconds = time_stamp_milliseconds % 1000 // 10
-    else:
-        time_milliseconds = time_stamp_milliseconds % 1000
-
-    # 优化，通过格式化，将补0和转字符串操作合二为一。
-    # 补位至两位
-    str_minutes = "{time:0>2}".format(time=time_stamp_milliseconds // 1000 // 60)
-    str_seconds = "{time:0>2}".format(time=time_stamp_milliseconds // 1000 % 60)
-    str_millisecond = "{time:0>2}".format(time=time_milliseconds)
-
-    # print(minutes_str, seconds_str, milliseconds_str)
-
-    time = str_minutes + ':' + str_seconds + '.' + str_millisecond
-
-    if with_bracket:
-        time = '[' + time + ']'
-
-    return time
-
-
 class Lyric_file:
     """
     同时兼容文件和文件内容
+    其实没有必要，可以用另外一个函数生成饭后返回实例化后的本类
+    本类专注于处理文件内容，而不是文件本身
     """
 
     def __init__(self,
@@ -377,7 +267,6 @@ class Lyric_file:
         # ————————————————————————————————————————文件预处理（打开）区————————————————————————————————————————
 
         # ————————————————————————————————————————属性区————————————————————————————————————————
-        self.artist: Optional[str]
         # tag 初始化，考虑后期封装
         # 基本 tag 的属性
         # 设定TAG初始值为None
@@ -643,7 +532,7 @@ class Lyric_file:
         """
         'lyric_list' must be a list of lyric lines splitted by lines.(A primary list)
         
-        with_time_bracket means whether the time original_tab having brackets in output.
+        with_time_bracket means whether the time original_time_tab having brackets in output.
         
         This function not only fill the blank lyric into '',
         but also do a further split in each element.
@@ -704,13 +593,13 @@ class Lyric_file:
 
         |||ATTENTION The format of lyric_list must be the secondary list!!|||
 
-        ignore_blank means whether ignore the blank lyirc which has only a time original_tab.
+        ignore_blank means whether ignore the blank lyirc which has only a time original_time_tab.
 
-        numerator/denominator is the way to calculate the new translated time original_tab.
+        numerator/denominator is the way to calculate the new translated time original_time_tab.
 
-        line_shift is the start line of lyric, in order to avoid the head information but with time original_tab.
+        line_shift is the start line of lyric, in order to avoid the head information but with time original_time_tab.
 
-        last_limit is the last time original_tab to calculate(in milliseconds_str).
+        last_limit is the last time original_time_tab to calculate(in milliseconds_str).
 
         (without the basic information)
         lyric_list = [[time,lyric],[time,lyric],[time,lyric]...]
@@ -787,7 +676,7 @@ class Lyric_file:
                                  with_bracket=True) -> list:
 
         """
-        It is used to format the time original_tab having un-standard format,
+        It is used to format the time original_time_tab having un-standard format,
         such as [xx:xx.xxx]
 
         It return a secondary list.
@@ -939,7 +828,7 @@ class Lyric_file:
 
     def simple_lrc(self, lyric=None) -> list:
         '''
-        It simplify the whole lyric file by conbining same lyrics but having different time original_tab.
+        It simplify the whole lyric file by conbining same lyrics but having different time original_time_tab.
         The 'lyric' must be in format:(primary list)
             lyric = [lyric_line,lyric_line,lyric_line...]
 
@@ -1000,11 +889,11 @@ class Lyric_file:
         The lyric should be a first ordered list with each line of the lyric as an element without the basic information.
         lyric = [[lyric_line],[lyric_line],[lyric_line]...]
 
-        insert_after_lastly is the way of adding the same lyric into the right order while having the same time original_tab,
+        insert_after_lastly is the way of adding the same lyric into the right order while having the same time original_time_tab,
 
         which has three choises:
-            None means that insert in the place which the lyric has the same time original_tab.
-            'after' means that insert in the place which the lyric has the same time original_tab +1.
+            None means that insert in the place which the lyric has the same time original_time_tab.
+            'after' means that insert in the place which the lyric has the same time original_time_tab +1.
             '←' means that insert in the place if the last way of finding is towards the smaller place, then +1.
             '→' means that insert in the place if the last way of finding is towards the larger place, then +1.
 
@@ -1226,7 +1115,7 @@ class Lyric_file:
         '''
         The lyric should be a secondary list.
         
-        It return a list with all time original_tab.
+        It return a list with all time original_time_tab.
         '''
 
         pure_time_tab_list: list

@@ -2,6 +2,7 @@ import re
 from typing import Optional
 from typing import Final
 from typing import Match, Pattern
+from typing import Self
 
 # 时间标签转换常量
 CONVERSION_TIME_60: int = 60
@@ -9,7 +10,7 @@ CONVERSION_TIME_1000: int = 1000
 CONVERSION_TIME_100: int = 100
 
 
-class Time_tab:
+class Lyric_Time_tab:
     """
     中文注释： \n
     LRC 歌词格式的 时间标签类
@@ -28,19 +29,27 @@ class Time_tab:
     拥有严格，普通，宽松，非常宽松四种模式
     strict: 严格模式，只接受[00:00.00]、<00:00.00>格式
     normal: 普通模式，接受[00:00[:.]{2-3}]、<00:00[:.]{2-3}>格式
-    loose: 宽松模式，在normal基础上 允许 分钟秒钟毫秒任意位数，但是不允许括号缺失， 毫秒数可缺失 [ \d* : \d* [:.] \d* ]
+    loose: 宽松模式，在normal基础上 允许 分钟秒钟毫秒任意位数，至少一位，但是不允许括号缺失， 毫秒数可缺失 [ \d* : \d* [:.] \d* ]
     very_loose: 非常宽松模式，允许括号缺失 [? \d* : \d* [:.] \d* ]?
+    
+    # 规范里面说了，分钟位和秒钟位必须有数字
     '''
     # 每句歌词的时间标签的正则表达式 []
     # 严格模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d{2})(:)(\d{2})(\.)(\d{2})(])')
+    TIME_TAB_EACH_LINE_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                       r'(?P<minutes>\d{2})'
+                                                                       r'(?P<colon_1>:)'
+                                                                       r'(?P<seconds>\d{2})'
+                                                                       r'(?P<dot_1>\.)'
+                                                                       r'(?P<milliseconds>\d{2})'
+                                                                       r'(?P<right_bracket>\])')
     # 普通模式时间标签的正则表达式
     TIME_TAB_EACH_LINE_NORMAL_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d{2})(:)(\d{2})([:.])(\d{2,3})(])')
 
     # 宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d*)(:)(\d*)([:.])?(\d*)?(])')
+    TIME_TAB_EACH_LINE_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)(\d+)(:)(\d+)([:.])?(\d*)?(])')
     # 非常宽松模式时间标签的正则表达式
-    TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)?(\d*)(:)(\d*)([:.])?(\d*)?(])?')
+    TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(\[)?(\d+)(:)(\d+)([:.])?(\d*)?(])?')
 
     # 正则表达式列表
     TIME_TAB_EACH_LINE_REGREX_LIST: list = [TIME_TAB_EACH_LINE_STRICT_REGREX,
@@ -64,16 +73,15 @@ class Time_tab:
                                             TIME_TAB_EACH_WORD_LOOSE_REGREX,
                                             TIME_TAB_EACH_WORD_VERY_LOOSE_REGREX]
 
-
     """
     接受一个时间标签字符串，分离出时间标签的各个部分
     """
 
     def __init__(self, tab: str, mode: str = 'normal'):
         # 时间标签原始字符串
-        self.original_tab: str = tab
+        self.original_time_tab: str = tab
         # 修改或者规范后的时间标签字符串
-        self.tab: Optional[str] = None
+        self.time_tab: Optional[str] = None
 
         # 时间标签类型 [] or <>
         self.brackets: Optional[list[str, str]] = None
@@ -112,7 +120,7 @@ class Time_tab:
 
     # 返回时间标签字符串
     def __str__(self):
-        return self.original_tab
+        return self.original_time_tab
 
     # 返回时间标签列表
     def __repr__(self):
@@ -238,7 +246,7 @@ class Time_tab:
         if isinstance(other, self.__class__):
             return self.time_stamp & other.time_stamp
         # 判断类型是否为 int 或者 float
-        elif isinstance(other, int) :
+        elif isinstance(other, int):
             return self.time_stamp & other
         else:
             raise TypeError('unsupported operand type(s) for &: \'TimeTab\' and \'{}\''.format(type(other)))
@@ -263,15 +271,12 @@ class Time_tab:
         else:
             raise TypeError('unsupported operand type(s) for |: \'TimeTab\' and \'{}\''.format(type(other)))
 
-
-
-
     """
     预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
     私有方法
     """
 
-    def __pre_separating(self, tab: str, mode: str = 'normal'):
+    def __pre_separating(self, tab: str, mode: str = 'normal') -> None:
         """
         中文注释：
         预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
@@ -289,7 +294,7 @@ class Time_tab:
 
         # 匹配时间标签
         # 判断是否合法，并且判断类型
-        valid_with_type: list[bool, Optional[Pattern[str]]] = Time_tab.is_valid_with_type(tab, mode)
+        valid_with_type: list[bool, Optional[Pattern[str]]] = Lyric_Time_tab.is_valid_with_type(tab, mode)
 
         # 如果合法
         if valid_with_type[0]:
@@ -343,7 +348,7 @@ class Time_tab:
                 milliseconds_int = 0
 
             # 调用函数，计算时间戳
-            self.time_stamp = Time_tab.calculate_time_stamp(minutes_int, seconds_int, milliseconds_int)
+            self.time_stamp = Lyric_Time_tab.calculate_time_stamp(minutes_int, seconds_int, milliseconds_int)
 
         # 如果不合法
         else:
@@ -396,7 +401,7 @@ class Time_tab:
         if mode == 'strict':
             # 每行的
             if re.match(cls.TIME_TAB_EACH_LINE_STRICT_REGREX, tab):
-                return [True, Time_tab.TIME_TAB_EACH_LINE_STRICT_REGREX]
+                return [True, Lyric_Time_tab.TIME_TAB_EACH_LINE_STRICT_REGREX]
             # 每个字的
             elif re.match(cls.TIME_TAB_EACH_WORD_STRICT_REGREX, tab):
                 return [True, cls.TIME_TAB_EACH_WORD_STRICT_REGREX]
@@ -522,7 +527,7 @@ class Time_tab:
         :param len_of_millisecond: 毫秒位的位数 The number of milliseconds_str
         :param keep_decimal: 是否保留小数位 Whether to keep decimal places
         """
-        return Time_tab.format_time_stamp_static(self.time_stamp, len_of_millisecond, keep_decimal)
+        return Lyric_Time_tab.format_time_stamp_static(self.time_stamp, len_of_millisecond, keep_decimal)
 
     """
     将时间戳转为时间标签
@@ -604,26 +609,24 @@ class Time_tab:
         It converts the time stamp of time tag in to a tag. It operates on the instance itself.
 
         :param len_of_millisecond_inputted: 输入的时间戳的毫秒位的位数 The number of milliseconds_str of the input time stamp
-            默认在实例化类的时候已经转换成了3位毫秒位的时间戳 Default is 3 digits in property time_stamp of class Time_tab
+            默认在实例化类的时候已经转换成了3位毫秒位的时间戳 Default is 3 digits in property time_stamp of class Lyric_Time_tab
         :param len_of_millisecond_output: 输出的时间戳的毫秒位的位数 The number of milliseconds_str of the output time stamp
         :param brackets: 括号 The brackets
         :param seperator: 分隔符 The seperator
         :return: 时间标签 The time tag
         """
-        return Time_tab.convert_time_stamp_to_time_tab_static(self.time_stamp,
-                                                              len_of_millisecond_inputted,
-                                                              len_of_millisecond_output,
-                                                              brackets,
-                                                              seperator)
-
-
+        return Lyric_Time_tab.convert_time_stamp_to_time_tab_static(self.time_stamp,
+                                                                    len_of_millisecond_inputted,
+                                                                    len_of_millisecond_output,
+                                                                    brackets,
+                                                                    seperator)
 
     def shift_time(self,
                    minutes: int,
                    seconds: int,
                    milliseconds: int,
                    len_of_millisecond: int = 3
-                   ) -> None:
+                   ) -> Self:
         """
         中文：\n
         将时间标签向前或向后移动
@@ -651,7 +654,7 @@ class Time_tab:
         self.time_list[5] += milliseconds
 
         # 计算时间戳
-        time_stamp_shift: int = Time_tab.calculate_time_stamp(minutes, seconds, milliseconds)
+        time_stamp_shift: float = Lyric_Time_tab.calculate_time_stamp(minutes, seconds, milliseconds)
 
         # 移动时间戳
         self.time_stamp += time_stamp_shift
@@ -660,10 +663,13 @@ class Time_tab:
         self.time_tab = self.convert_to_time_tab()
 
 
+        return self
+
+    # 返回自身
     def format_time_tab(self,
                         brackets: Optional[tuple[str, str]],
                         seperator: Optional[tuple[str, str]]
-                        ) -> None:
+                        ) -> Self:
         """
         中文：\n
         格式化时间标签对象本身 \n
@@ -671,6 +677,7 @@ class Time_tab:
         把毫秒 限制在0-999之间 \n
         并且补全括号，分隔符 \n
         如果brackets和seperator为None，则不补全括号，分隔符
+        返回规范化后的自身
 
         English: \n
         Format the time tag object itself\n
@@ -678,9 +685,10 @@ class Time_tab:
         Limit the milliseconds_str between 0 and 999 \n
         And complete the brackets and seperator \n
         If brackets and seperator are None, do not complete the brackets and seperator
+        Return the normalized self
 
 
-        :return: None
+        :return: self
         """
 
         # ==================== 时分秒毫秒单位溢出处理 ==================== #
@@ -690,7 +698,6 @@ class Time_tab:
         minutes: int = int(self.minutes_str)
         seconds: int = int(self.seconds_str)
         milliseconds: float = float(self.milliseconds_str)
-
 
         # 毫秒
         # 如果大于等于1000
@@ -760,7 +767,7 @@ class Time_tab:
         self.time_list[3] = seconds
         self.time_list[5] = milliseconds
 
-
+        return self
 
 
 """
@@ -772,9 +779,9 @@ Test content
 """
 if __name__ == '__main__':
     # 打印正则表达式列表
-    for i in Time_tab.TIME_TAB_EACH_LINE_REGREX_LIST:
+    for i in Lyric_Time_tab.TIME_TAB_EACH_LINE_REGREX_LIST:
         print(i)
 
-    print(Time_tab.TIME_TAB_EACH_LINE_NORMAL_REGREX.pattern)
+    print(Lyric_Time_tab.TIME_TAB_EACH_LINE_NORMAL_REGREX.pattern)
 
-    print(Time_tab.calculate_time_stamp(10, 1, 100))
+    print(Lyric_Time_tab.calculate_time_stamp(10, 1, 100))
