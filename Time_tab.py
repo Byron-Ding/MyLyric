@@ -142,7 +142,129 @@ class Time_tab:
     def __ge__(self, other):
         return self.time_stamp >= other.time_stamp
 
-    # 加减乘除运算
+    # 加减乘除运算，返回时间标签时间戳
+    def __add__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp + other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp + other
+        else:
+            raise TypeError('unsupported operand type(s) for +: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __sub__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp - other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp - other
+        else:
+            raise TypeError('unsupported operand type(s) for -: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __mul__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp * other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp * other
+        else:
+            raise TypeError('unsupported operand type(s) for *: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __truediv__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp / other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp / other
+        else:
+            raise TypeError('unsupported operand type(s) for /: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __floordiv__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp // other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp // other
+        else:
+            raise TypeError('unsupported operand type(s) for //: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __mod__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp % other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp % other
+        else:
+            raise TypeError('unsupported operand type(s) for %: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __pow__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp ** other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.time_stamp ** other
+        else:
+            raise TypeError('unsupported operand type(s) for **: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __lshift__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp << other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int):
+            return self.time_stamp << other
+        else:
+            raise TypeError('unsupported operand type(s) for <<: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __rshift__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp >> other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int):
+            return self.time_stamp >> other
+        else:
+            raise TypeError('unsupported operand type(s) for >>: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __and__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp & other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int) :
+            return self.time_stamp & other
+        else:
+            raise TypeError('unsupported operand type(s) for &: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __xor__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp ^ other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int):
+            return self.time_stamp ^ other
+        else:
+            raise TypeError('unsupported operand type(s) for ^: \'TimeTab\' and \'{}\''.format(type(other)))
+
+    def __or__(self, other):
+        # 判断类型是否为 时间标签
+        if isinstance(other, self.__class__):
+            return self.time_stamp | other.time_stamp
+        # 判断类型是否为 int 或者 float
+        elif isinstance(other, int):
+            return self.time_stamp | other
+        else:
+            raise TypeError('unsupported operand type(s) for |: \'TimeTab\' and \'{}\''.format(type(other)))
+
+
+
 
     """
     预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
