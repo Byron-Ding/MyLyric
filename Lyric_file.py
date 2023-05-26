@@ -3,7 +3,9 @@ from typing import Any
 from typing import Optional, Self
 from typing import Union
 from typing import Pattern, Match
+from typing import Callable
 import Lyric_Time_tab
+import Lyric_content
 
 
 class Lyric_file:
@@ -61,9 +63,9 @@ class Lyric_file:
         # ==================== 歌词的内容属性区 ====================
 
         # 一级列表，每个元素为一行歌词
-        self.lrc_lines_primary: list[str] = []
+        self.lrc_lines_primary_initial: list[str] = []
         # 二级列表，每个元素为一行歌词，每行歌词为一个列表，列表第一个元素为时间标签类或者None（表示只有内容），第二个元素为歌词内容
-        self.lrc_lines_secondary: list[list[Optional[Lyric_Time_tab], list[str]]] = []
+        self.lrc_lines_tertiary: list[list[Optional[Lyric_Time_tab], list[Lyric_content.Lyric_content]]] = []
 
         # ==================== 歌词的内容属性区结束 ====================
 
@@ -159,19 +161,19 @@ class Lyric_file:
         # 是字符串，按行分割，去除空行（含只有空白字符的行）
         if isinstance(lrc_content, str):
             # 按行分割
-            self.lrc_lines_primary = lrc_content.splitlines()
+            self.lrc_lines_primary_initial = lrc_content.splitlines()
             # 去除空行
-            self.lrc_lines_primary = [line for line in self.lrc_lines_primary if line.strip()]
+            self.lrc_lines_primary_initial = [line for line in self.lrc_lines_primary_initial if line.strip()]
         # 是列表，直接赋值，但是依然要去除空行（含只有空白字符的行）
         elif isinstance(lrc_content, list):
-            self.lrc_lines_primary = [line for line in lrc_content if line.strip()]
+            self.lrc_lines_primary_initial = [line for line in lrc_content if line.strip()]
         # 不是字符串也不是列表，抛出异常
         else:
             raise TypeError("lrc_content must be str or list divided by lines")
 
         # 调用信息分离处理函数，分离歌词内容和歌词信息
         # 传入参数为歌词内容的列表
-        self.__lrc_information_content_separation(self.lrc_lines_primary, mode)
+        self.__lrc_information_content_separation(self.lrc_lines_primary_initial, mode)
 
         # 合并跨行歌词
         self.merge_cross_line_lyrics()
@@ -267,6 +269,9 @@ class Lyric_file:
         # 获取歌词
         lrc: str = each_line_match.group("lrc_content")
 
+        # 转为类
+        lrc: Lyric_content.Lyric_content = Lyric_content.Lyric_content(lrc)
+
         time: Optional[Lyric_Time_tab.Lyric_Time_tab]
         # 判断时间 是否为空
         if time:
@@ -276,15 +281,15 @@ class Lyric_file:
             time = None
 
         # 放入二级歌词列表中
-        self.lrc_lines_secondary.append([time, [lrc]])
+        self.lrc_lines_tertiary.append([time, [lrc]])
         # 合并跨行歌词
         self.merge_cross_line_lyrics()
 
 
     # 合并跨行歌词
     @staticmethod
-    def merge_cross_line_lyrics_static(tertiary_lyric_list: list[Any, list[str]]
-                                ) -> list[Any, list[str]]:
+    def merge_cross_line_lyrics_static(tertiary_lyric_list: list[Any, list[Lyric_content.Lyric_content]]
+                                ) -> list[Any, list[Lyric_content.Lyric_content]]:
         """
         中文：
         合并跨行歌词
@@ -301,7 +306,7 @@ class Lyric_file:
             raise ValueError("The first line of lyrics does not have a time tag")
 
         # 返回的列表
-        return_list: list[Lyric_Time_tab.Lyric_Time_tab | str, list[str]] = []
+        return_list: list[Lyric_Time_tab.Lyric_Time_tab | str, list[Lyric_content.Lyric_content]] = []
 
         # 逐行处理
         for each_line_list in tertiary_lyric_list:
@@ -331,7 +336,7 @@ class Lyric_file:
         :return: Self
         """
         # 调用静态方法
-        self.lrc_lines_secondary = self.merge_cross_line_lyrics_static(self.lrc_lines_secondary)
+        self.lrc_lines_tertiary = self.merge_cross_line_lyrics_static(self.lrc_lines_tertiary)
 
         # 这里不需要更新一级列表
 
@@ -343,7 +348,8 @@ class Lyric_file:
     def convert_primary_lyric_list_to_secondary_list_classmethod(cls,
                                                             lrc_lines: str | list[str],
                                                             mode: str
-                                                            ) -> list[list[Lyric_Time_tab.Lyric_Time_tab, list[str]]]:
+                                                            ) -> list[list[Lyric_Time_tab.Lyric_Time_tab,
+                                                                           list[Lyric_content.Lyric_content]]]:
         """
             中文：
             在纯歌词内容的字符串或列表中，分离时间标签和歌词内容
@@ -358,7 +364,7 @@ class Lyric_file:
             :return: list[list[Lyric_Time_tab.Lyric_Time_tab, [str]]]
         """
         # 新的空列表
-        output_list: list[str | list[Lyric_Time_tab.Lyric_Time_tab], list[str]]
+        output_list: list[str | list[Lyric_Time_tab.Lyric_Time_tab], list[Lyric_content.Lyric_content]]
 
         # 如果是字符串，按行分割，去除空行（含只有空白字符的行）
         if isinstance(lrc_lines, str):
@@ -472,7 +478,7 @@ class Lyric_file:
 
         :return: bool
         """
-        return Lyric_file.judge_standard_form_classmethod(self.lrc_lines_primary)
+        return Lyric_file.judge_standard_form_classmethod(self.lrc_lines_primary_initial)
 
     # 合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符
     # 第一行有时间标签，后面的行没有时间标签，直到下一个有时间标签的行
@@ -493,11 +499,11 @@ class Lyric_file:
     @staticmethod
     def combine_lyric_separated_to_continuous_lines_static(input_lyric_lines: list[
                                                            list[Any,
-                                                                list[str]]
+                                                                list[Lyric_content.Lyric_content]]
                                                            ],
                                                            separator: str = "\n",
                                                            ) -> list[list[Any,
-                                                                          list[str]]]:
+                                                                            list[Lyric_content.Lyric_content]]]:
         """
         中文：\n
         合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符。
@@ -524,7 +530,7 @@ class Lyric_file:
 
 
         # 新的列表
-        output_list: list[list[Lyric_Time_tab.Lyric_Time_tab | str, list[str]]] = []
+        output_list: list[list[Lyric_Time_tab.Lyric_Time_tab | str, list[Lyric_content.Lyric_content]]] = []
 
         # 先确认第一行有时间标签或者是非空字符串
         if not (input_lyric_lines[0][0]):
@@ -532,7 +538,7 @@ class Lyric_file:
 
         # 遍历每一行
         for line in input_lyric_lines:
-            line: list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], list[str]]
+            line: list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], list[Lyric_content.Lyric_content]]
 
             # 管他是哪一行，先合并后面的歌词列表
             # 把列表里面的每一项拼接成字符串，中间用separator分割
@@ -546,8 +552,8 @@ class Lyric_file:
             else:
                 # 如果这一行没有时间标签，那么就和前一行合并
                 # 注意这里的时间标签可以是Lyric_Time_tab.Lyric_Time_tab对象，也可以是字符串
-                # 只要不是None就行
-                if line[0] is None:
+                # 只要不是None就行或者不是空字符串就行
+                if line[0] is None or line[0].isempty():
                     # 直接字符串拼接
                     output_list[-1][1][0] = output_list[-1][1][0] + line[1][0]
                 # 如果这一行有时间标签，那么就直接放入新列表
@@ -560,7 +566,9 @@ class Lyric_file:
     # 实例方法
     def combine_lyric_separated_to_continuous_lines(self,
                                                     separator: str = "\n",
-                                                    ) -> Self:
+                                                    ) -> list[list[Any,
+                                                                     list[Lyric_content.Lyric_content]]]:
+
         """
         中文：\n
         合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符。
@@ -586,20 +594,15 @@ class Lyric_file:
 
         # 调用静态方法
         # 赋值回二级列表
-        self.lrc_lines_primary = Lyric_file.combine_lyric_separated_to_continuous_lines_static(
-            input_lyric_lines=self.lrc_lines_secondary,
+        output = Lyric_file.combine_lyric_separated_to_continuous_lines_static(
+            input_lyric_lines=self.lrc_lines_tertiary,
             separator=separator
         )
 
         # 记得根据二级列表更新一级列表
 
         # 返回自身
-        return self
-
-
-
-
-
+        return output
 
 
 
@@ -608,7 +611,7 @@ class Lyric_file:
     # 二级列表的每一行的第一个元素是时间标签，第二个元素是歌词内容
     @staticmethod
     def convert_secondary_lyric_list_to_primary_list_static(input_lyric_lines: list[
-        list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], str]
+        list[Any, list[Lyric_content.Lyric_content]]
     ]) -> list[str]:
         """
         中文：\n
@@ -618,60 +621,26 @@ class Lyric_file:
         Convert the secondary list of lyrics into a primary list.
 
         :param input_lyric_lines: list[list[Lyric_Time_tab.Lyric_Time_tab | str, str]]
+        :param time_tab_str_function: Callable[[Any], str]
         :return: list[str]
         """
 
         # 新的列表
         output_list: list[str] = []
 
+        # 先合并
+        input_lyric_lines = Lyric_file.combine_lyric_separated_to_continuous_lines_static(
+            input_lyric_lines=input_lyric_lines
+        )
+
         # 遍历每一行
         for line in input_lyric_lines:
-            line: list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], str]
+            pass
 
-            # 将两项合并为一项，str
-            # 注意这里的时间标签可以是Lyric_Time_tab.Lyric_Time_tab对象，也可以是字符串，还可以是None
-            # None
-            if line[0] is None:
-                # 如果是None，那么就直接放入新列表
-                output_list.append(line[1])
-            # Time_tab
-            elif isinstance(line[0], Lyric_Time_tab.Lyric_Time_tab):
-                # 如果是Time_tab，那么就取属性拼接之后，放入新列表
-                output_list.append(line[0].time_tag + line[1])
-            # str
-            elif isinstance(line[0], str):
-                # 如果是str，那么拼接之后就直接放入新列表
-                output_list.append(line[0] + line[1])
-
-            # 如果是其他类型，则可能传入的参数有误，抛出异常
-            else:
-                raise TypeError("传入的参数有误，列表的第一项应该是None或Lyric_Time_tab.Lyric_Time_tab对象或str对象，\
-                                第二项应该是str对象。")
 
         # 返回新列表
         return output_list
 
-    # 实例方法
-    # 根据自身的二级列表更新一级列表
-    def update_primary_lyric_list_by_secondary_list(self) -> Self:
-        """
-        中文：\n
-        根据自身的二级列表更新一级列表。
-
-        English: \n
-        Update the primary list according to the secondary list of itself.
-
-        :return: Self
-        """
-
-        # 调用静态方法
-        # 赋值回一级列表
-        self.lrc_lines_primary = Lyric_file.convert_secondary_lyric_list_to_primary_list_static(
-            input_lyric_lines=self.lrc_lines_secondary
-        )
-
-        # 返回自身
-        return self
 
     # 计算所有的翻译时间标签
     # 参数有
@@ -705,20 +674,20 @@ class Lyric_file:
 
         # 看第一行是否有时间标签
         # 如果没有时间标签 或者 第一行时间标签为空白字符串，那么就抛出异常
-        if self.lrc_lines_secondary[0][0] is None or self.lrc_lines_secondary[0][0].isspace():
+        if self.lrc_lines_tertiary[0][0] is None or self.lrc_lines_tertiary[0][0].isspace():
             raise ValueError("第一行没有时间标签，无法计算。")
 
         # 前一行的时间标签，初始化为第一行的时间标签
-        previous_line_time_tab: Lyric_Time_tab.Lyric_Time_tab = self.lrc_lines_secondary[0][0]
+        previous_line_time_tab: Lyric_Time_tab.Lyric_Time_tab = self.lrc_lines_tertiary[0][0]
 
         # 当前行歌词
-        current_line_lyric: str = self.lrc_lines_secondary[0][1]
+        current_line_lyric: str = self.lrc_lines_tertiary[0][1]
 
         # 下一行的时间标签，初始化为None
         next_line_time_tab: Optional[Lyric_Time_tab.Lyric_Time_tab] = None
 
         # 遍历每一行
-        for line in self.lrc_lines_secondary[1:]:
+        for line in self.lrc_lines_tertiary[1:]:
             # 先看是否有时间标签
             # 如果没有时间标签 或者 时间标签为空白字符串，跳过，直到找到时间标签为止
             if line[0] is None or line[0].isspace():
@@ -818,7 +787,7 @@ class Lyric_file:
         temp_list: list[list[Lyric_Time_tab.Lyric_Time_tab, list[str]]] = []
 
         # 遍历每一行
-        for line in self.lrc_lines_secondary:
+        for line in self.lrc_lines_tertiary:
             # 带时间标签的歌词
             if line[0] is not None:
                 # 加入临时列表

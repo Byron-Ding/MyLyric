@@ -40,7 +40,7 @@ class Lyric_Time_tab:
                                                                        r'(?P<minutes>\d{2})'
                                                                        r'(?P<minutes_seconds_seperator>:)'
                                                                        r'(?P<seconds>\d{2})'
-                                                                       r'(?P<dot_1>\.)'
+                                                                       r'(?P<seconds_milliseconds_seperator>\.)'
                                                                        r'(?P<milliseconds>\d{2})'
                                                                        r'(?P<right_bracket>])')
     # 普通模式时间标签的正则表达式
@@ -48,7 +48,7 @@ class Lyric_Time_tab:
                                                                        r'(?P<minutes>\d{2})'
                                                                        r'(?P<minutes_seconds_seperator>:)'
                                                                        r'(?P<seconds>\d{2})'
-                                                                       r'(?P<dot_1>[:.])'
+                                                                       r'(?P<seconds_milliseconds_seperator>[:.])'
                                                                        r'(?P<milliseconds>\d{2,3})'
                                                                        r'(?P<right_bracket>])')
 
@@ -57,7 +57,7 @@ class Lyric_Time_tab:
                                                                       r'(?P<minutes>\d*)'
                                                                       r'(?P<minutes_seconds_seperator>:)'
                                                                       r'(?P<seconds>\d*)'
-                                                                      r'(?P<dot_1>[:.])?'
+                                                                      r'(?P<seconds_milliseconds_seperator>[:.])?'
                                                                       r'(?P<milliseconds>\d*)?'
                                                                       r'(?P<right_bracket>])')
     # 非常宽松模式时间标签的正则表达式
@@ -65,7 +65,7 @@ class Lyric_Time_tab:
                                                                            r'(?P<minutes>\d*)'
                                                                            r'(?P<minutes_seconds_seperator>:)'
                                                                            r'(?P<seconds>\d*)'
-                                                                           r'(?P<dot_1>[:.])?'
+                                                                           r'(?P<seconds_milliseconds_seperator>[:.])?'
                                                                            r'(?P<milliseconds>\d*)?'
                                                                            r'(?P<right_bracket>])?')
 
@@ -81,7 +81,7 @@ class Lyric_Time_tab:
                                                                        r'(?P<minutes>\d{2})'
                                                                        r'(?P<minutes_seconds_seperator>:)'
                                                                        r'(?P<seconds>\d{2})'
-                                                                       r'(?P<dot_1>\.)'
+                                                                       r'(?P<seconds_milliseconds_seperator>\.)'
                                                                        r'(?P<milliseconds>\d{2})'
                                                                        r'(?P<right_bracket>>)')
     # 普通模式时间标签的正则表达式
@@ -89,7 +89,7 @@ class Lyric_Time_tab:
                                                                        r'(?P<minutes>\d{2})'
                                                                        r'(?P<minutes_seconds_seperator>:)'
                                                                        r'(?P<seconds>\d{2})'
-                                                                       r'(?P<dot_1>[:.])'
+                                                                       r'(?P<seconds_milliseconds_seperator>[:.])'
                                                                        r'(?P<milliseconds>\d{2,3})'
                                                                        r'(?P<right_bracket>>)')
     # 宽松模式时间标签的正则表达式
@@ -97,7 +97,7 @@ class Lyric_Time_tab:
                                                                       r'(?P<minutes>\d*)'
                                                                       r'(?P<minutes_seconds_seperator>:)'
                                                                       r'(?P<seconds>\d*)'
-                                                                      r'(?P<dot_1>[:.])?'
+                                                                      r'(?P<seconds_milliseconds_seperator>[:.])?'
                                                                       r'(?P<milliseconds>\d*)?'
                                                                       r'(?P<right_bracket>>)')
     # 非常宽松模式时间标签的正则表达式
@@ -105,7 +105,7 @@ class Lyric_Time_tab:
                                                                            r'(?P<minutes>\d*)'
                                                                            r'(?P<minutes_seconds_seperator>:)'
                                                                            r'(?P<seconds>\d*)'
-                                                                           r'(?P<dot_1>[:.])?'
+                                                                           r'(?P<seconds_milliseconds_seperator>[:.])?'
                                                                            r'(?P<milliseconds>\d*)?'
                                                                            r'(?P<right_bracket>>)?')
 
@@ -196,175 +196,108 @@ class Lyric_Time_tab:
     def __add__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp + other.time_stamp
+            self.time_stamp += other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp + other
+            self.time_stamp += other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for +: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __sub__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp - other.time_stamp
+            self.time_stamp -= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp - other
+            self.time_stamp -= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for -: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __mul__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp * other.time_stamp
+            self.time_stamp *= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp * other
+            self.time_stamp *= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for *: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __truediv__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp / other.time_stamp
+            self.time_stamp /= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp / other
+            self.time_stamp /= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for /: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __floordiv__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp // other.time_stamp
+            self.time_stamp //= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp // other
+            self.time_stamp //= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for //: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __mod__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp % other.time_stamp
+            self.time_stamp %= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp % other
+            self.time_stamp %= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for %: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __pow__(self, other):
         # 判断类型是否为 时间标签
         if isinstance(other, self.__class__):
-            return self.time_stamp ** other.time_stamp
+            self.time_stamp **= other.time_stamp
+            return self
         # 判断类型是否为 int 或者 float
         elif isinstance(other, int) or isinstance(other, float):
-            return self.time_stamp ** other
+            self.time_stamp **= other * CONVERSION_TIME_1000
+            return self
         else:
             raise TypeError('unsupported operand type(s) for **: \'TimeTab\' and \'{}\''.format(type(other)))
 
-    def __lshift__(self, other):
-        # 判断类型是否为 时间标签
-        if isinstance(other, self.__class__):
-            return self.time_stamp << other.time_stamp
-        # 判断类型是否为 int 或者 float
-        elif isinstance(other, int):
-            return self.time_stamp << other
-        else:
-            raise TypeError('unsupported operand type(s) for <<: \'TimeTab\' and \'{}\''.format(type(other)))
-
-    def __rshift__(self, other):
-        # 判断类型是否为 时间标签
-        if isinstance(other, self.__class__):
-            return self.time_stamp >> other.time_stamp
-        # 判断类型是否为 int 或者 float
-        elif isinstance(other, int):
-            return self.time_stamp >> other
-        else:
-            raise TypeError('unsupported operand type(s) for >>: \'TimeTab\' and \'{}\''.format(type(other)))
-
-    def __and__(self, other):
-        # 判断类型是否为 时间标签
-        if isinstance(other, self.__class__):
-            return self.time_stamp & other.time_stamp
-        # 判断类型是否为 int 或者 float
-        elif isinstance(other, int):
-            return self.time_stamp & other
-        else:
-            raise TypeError('unsupported operand type(s) for &: \'TimeTab\' and \'{}\''.format(type(other)))
-
-    def __xor__(self, other):
-        # 判断类型是否为 时间标签
-        if isinstance(other, self.__class__):
-            return self.time_stamp ^ other.time_stamp
-        # 判断类型是否为 int 或者 float
-        elif isinstance(other, int):
-            return self.time_stamp ^ other
-        else:
-            raise TypeError('unsupported operand type(s) for ^: \'TimeTab\' and \'{}\''.format(type(other)))
-
-    def __or__(self, other):
-        # 判断类型是否为 时间标签
-        if isinstance(other, self.__class__):
-            return self.time_stamp | other.time_stamp
-        # 判断类型是否为 int 或者 float
-        elif isinstance(other, int):
-            return self.time_stamp | other
-        else:
-            raise TypeError('unsupported operand type(s) for |: \'TimeTab\' and \'{}\''.format(type(other)))
 
     def __radd__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other + self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for +: \'{}\' and \'TimeTab\''.format(type(other)))
+        return self.__add__(other)
 
     def __rsub__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other - self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for -: \'{}\' and \'TimeTab\''.format(type(other)))
+        return self.__sub__(other)
 
     def __rmul__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other * self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for *: \'{}\' and \'TimeTab\''.format(type(other)))
+        return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other / self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for /: \'{}\' and \'TimeTab\''.format(type(other)))
-
+        return self.__truediv__(other)
 
     def __rfloordiv__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other // self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for //: \'{}\' and \'TimeTab\''.format(type(other)))
-
+        return self.__floordiv__(other)
 
     def __rmod__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other % self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for %: \'{}\' and \'TimeTab\''.format(type(other)))
-
+        return self.__mod__(other)
 
     def __rpow__(self, other):
-        # 判断类型是否为 int 或者 float
-        if isinstance(other, int) or isinstance(other, float):
-            return other ** self.time_stamp
-        else:
-            raise TypeError('unsupported operand type(s) for **: \'{}\' and \'TimeTab\''.format(type(other)))
-
+        return self.__pow__(other)
 
     """
     预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
@@ -666,8 +599,15 @@ class Lyric_Time_tab:
         # 转为字符串
         # 分
         minutes_str = str(minutes_int)
+        # 补位
+        # 不足则左边补0
+        minutes_str = minutes_str.rjust(2, "0")
+
         # 秒
         seconds_str = str(seconds_int)
+        # 补位
+        # 不足则左边补0
+        seconds_str = seconds_str.rjust(2, "0")
 
         # 毫秒
         # 如果有小数位，抹去小数位
@@ -880,3 +820,9 @@ if __name__ == '__main__':
     print(Lyric_Time_tab.TIME_TAB_EACH_LINE_NORMAL_REGREX.pattern)
 
     print(Lyric_Time_tab.calculate_time_stamp(10, 1, 100))
+
+
+    # 测试时间标签 += 运算符
+    time_tab = Lyric_Time_tab("[00:00.00]")
+    time_tab += 1
+    print(time_tab.convert_to_time_tab())
