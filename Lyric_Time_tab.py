@@ -313,6 +313,59 @@ class Lyric_Time_tab:
         else:
             raise TypeError('unsupported operand type(s) for |: \'TimeTab\' and \'{}\''.format(type(other)))
 
+    def __radd__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other + self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for +: \'{}\' and \'TimeTab\''.format(type(other)))
+
+    def __rsub__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other - self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for -: \'{}\' and \'TimeTab\''.format(type(other)))
+
+    def __rmul__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other * self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for *: \'{}\' and \'TimeTab\''.format(type(other)))
+
+    def __rtruediv__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other / self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for /: \'{}\' and \'TimeTab\''.format(type(other)))
+
+
+    def __rfloordiv__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other // self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for //: \'{}\' and \'TimeTab\''.format(type(other)))
+
+
+    def __rmod__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other % self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for %: \'{}\' and \'TimeTab\''.format(type(other)))
+
+
+    def __rpow__(self, other):
+        # 判断类型是否为 int 或者 float
+        if isinstance(other, int) or isinstance(other, float):
+            return other ** self.time_stamp
+        else:
+            raise TypeError('unsupported operand type(s) for **: \'{}\' and \'TimeTab\''.format(type(other)))
+
+
     """
     预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
     私有方法
@@ -577,7 +630,7 @@ class Lyric_Time_tab:
 
     @staticmethod
     def convert_time_stamp_to_time_tab_static(time_stamp: int | float,
-                                              len_of_millisecond_inputted: int = 2,
+                                              len_of_millisecond_inputted: int = 3,
                                               len_of_millisecond_output: int = 2,
                                               brackets: tuple[str, str] = ("[", "]"),
                                               seperator: tuple[str, str] = (":", ".")) -> str:
@@ -704,7 +757,6 @@ class Lyric_Time_tab:
 
         # 修改时间标签
         self.time_tab = self.convert_to_time_tab()
-
 
         return self
 
