@@ -1,4 +1,5 @@
 import re
+from typing import Any
 from typing import Optional, Self
 from typing import Union
 from typing import Pattern, Match
@@ -62,7 +63,7 @@ class Lyric_file:
         # 一级列表，每个元素为一行歌词
         self.lrc_lines_primary: list[str] = []
         # 二级列表，每个元素为一行歌词，每行歌词为一个列表，列表第一个元素为时间标签类或者None（表示只有内容），第二个元素为歌词内容
-        self.lrc_lines_secondary: list[list[Optional[Lyric_Time_tab], str]] = []
+        self.lrc_lines_secondary: list[list[Optional[Lyric_Time_tab], list[str]]] = []
 
         # ==================== 歌词的内容属性区结束 ====================
 
@@ -172,6 +173,10 @@ class Lyric_file:
         # 传入参数为歌词内容的列表
         self.__lrc_information_content_separation(self.lrc_lines_primary, mode)
 
+        # 合并跨行歌词
+        self.merge_cross_line_lyrics()
+
+
     # 歌词内容分离处理函数，分离歌词内容和歌词信息
     # 传入参数为歌词内容的列表
     def __lrc_information_content_separation(self, lrc_lines: list[str], mode: str) -> None:
@@ -271,13 +276,74 @@ class Lyric_file:
             time = None
 
         # 放入二级歌词列表中
-        self.lrc_lines_secondary.append([time, lrc])
+        self.lrc_lines_secondary.append([time, [lrc]])
+        # 合并跨行歌词
+        self.merge_cross_line_lyrics()
+
+
+    # 合并跨行歌词
+    @staticmethod
+    def merge_cross_line_lyrics_static(tertiary_lyric_list: list[Any, list[str]]
+                                ) -> list[Any, list[str]]:
+        """
+        中文：
+        合并跨行歌词
+
+        English:
+        Merge cross-line lyrics
+
+        :return: None
+        """
+
+        # 检测第一行是否有时间标签
+        # 没有或者空白字符串，报错
+        if tertiary_lyric_list[0][0] is None or tertiary_lyric_list[0][0].isspace():
+            raise ValueError("The first line of lyrics does not have a time tag")
+
+        # 返回的列表
+        return_list: list[Lyric_Time_tab.Lyric_Time_tab | str, list[str]] = []
+
+        # 逐行处理
+        for each_line_list in tertiary_lyric_list:
+            # 如果时间标签 有内容，那么就是新的一行歌词
+            if each_line_list[0]:
+                # 添加到列表中
+                return_list.append(each_line_list)
+            # 如果时间标签 为空，那么就是上一行歌词的延续
+            else:
+                # 添加到上一行歌词的列表中
+                return_list[-1][1].append(each_line_list[1])
+
+        return return_list
+
+    # 合并跨行歌词
+    # 实例方法
+    def merge_cross_line_lyrics(self) -> Self:
+        """
+        中文：
+        合并跨行歌词
+        不更新一级列表
+
+        English:
+        Merge cross-line lyrics
+        Do not update the primary list
+
+        :return: Self
+        """
+        # 调用静态方法
+        self.lrc_lines_secondary = self.merge_cross_line_lyrics_static(self.lrc_lines_secondary)
+
+        # 这里不需要更新一级列表
+
+        # 返回自身
+        return self
+
 
     @classmethod
-    def convert_primary_lyric_list_to_secondary_list_static(cls,
+    def convert_primary_lyric_list_to_secondary_list_classmethod(cls,
                                                             lrc_lines: str | list[str],
                                                             mode: str
-                                                            ) -> list[list[Lyric_Time_tab.Lyric_Time_tab, str]]:
+                                                            ) -> list[list[Lyric_Time_tab.Lyric_Time_tab, list[str]]]:
         """
             中文：
             在纯歌词内容的字符串或列表中，分离时间标签和歌词内容
@@ -289,10 +355,10 @@ class Lyric_file:
             :param mode: 时间标签检查严格度，可选值为 "strict", "normal", "loose" 和 “very_loose”
                 || The strictness of the time tag check,
                  the optional values are "strict", "normal", "loose" and "very_loose"
-            :return: list[list[Lyric_Time_tab.Lyric_Time_tab, str]]
+            :return: list[list[Lyric_Time_tab.Lyric_Time_tab, [str]]]
         """
         # 新的空列表
-        output_list: list[str | list[Lyric_Time_tab.Lyric_Time_tab, str]]
+        output_list: list[str | list[Lyric_Time_tab.Lyric_Time_tab], list[str]]
 
         # 如果是字符串，按行分割，去除空行（含只有空白字符的行）
         if isinstance(lrc_lines, str):
@@ -325,8 +391,11 @@ class Lyric_file:
                 time = None
 
             # 覆盖原项，放入new_list中
-            lrc_lines = [time, lrc]
+            lrc_lines = [time, [lrc]]
             output_list[output_list.index(lrc_lines)] = lrc_lines
+
+        # 合并跨行歌词
+        output_list = cls.merge_cross_line_lyrics_static(output_list)
 
         # 返回新的列表
         return output_list
@@ -423,10 +492,12 @@ class Lyric_file:
     # 默认的第一行有时间标签，所以直接从第二行开始判断，忽略第一行
     @staticmethod
     def combine_lyric_separated_to_continuous_lines_static(input_lyric_lines: list[
-        list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], str]
-    ],
+                                                           list[Any,
+                                                                list[str]]
+                                                           ],
                                                            separator: str = "\n",
-                                                           ) -> list[list[Lyric_Time_tab.Lyric_Time_tab | str, str]]:
+                                                           ) -> list[list[Any,
+                                                                          list[str]]]:
         """
         中文：\n
         合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符。
@@ -448,18 +519,25 @@ class Lyric_file:
 
         :param input_lyric_lines: list[list[Lyric_Time_tab.Lyric_Time_tab, str]]
         :param separator: str
-        :param mode: str
         :return: list[list[Lyric_Time_tab.Lyric_Time_tab, str]]
         """
 
+
         # 新的列表
-        output_list: list[
-            list[Lyric_Time_tab.Lyric_Time_tab | str, str]
-        ] = []
+        output_list: list[list[Lyric_Time_tab.Lyric_Time_tab | str, list[str]]] = []
+
+        # 先确认第一行有时间标签或者是非空字符串
+        if not (input_lyric_lines[0][0]):
+            raise ValueError("The first line of the input list does not have a time tag or is an empty string.")
 
         # 遍历每一行
         for line in input_lyric_lines:
-            line: list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], str]
+            line: list[Optional[Lyric_Time_tab.Lyric_Time_tab | str], list[str]]
+
+            # 管他是哪一行，先合并后面的歌词列表
+            # 把列表里面的每一项拼接成字符串，中间用separator分割
+            line[1] = list[separator.join(line[1])]
+            # 这样每个列表里面的第二项的list就只包含一个字符串了
 
             # 如果是第一行，那么直接放入新列表
             if line == input_lyric_lines[0]:
@@ -471,7 +549,7 @@ class Lyric_file:
                 # 只要不是None就行
                 if line[0] is None:
                     # 直接字符串拼接
-                    output_list[-1][1] += separator + line[1]
+                    output_list[-1][1][0] = output_list[-1][1][0] + line[1][0]
                 # 如果这一行有时间标签，那么就直接放入新列表
                 else:
                     output_list.append(line)
@@ -517,6 +595,14 @@ class Lyric_file:
 
         # 返回自身
         return self
+
+
+
+
+
+
+
+
 
     # 将歌词的二级列表转换为一级列表
     # 二级列表的每一行的第一个元素是时间标签，第二个元素是歌词内容
@@ -667,7 +753,6 @@ class Lyric_file:
             # 更新当前行歌词
             current_line_lyric = line[1]
 
-
         # 最后一行的时间标签
         # 涉及到 last_line_time_tab_limit
         # 如果 last_line_time_tab_limit = 0，那么就是最后一行的时间标签
@@ -693,7 +778,65 @@ class Lyric_file:
         # 加入输出列表 [时间标签对象，翻译歌词(其实是原始歌词，之后可以替换)]
         output_list.append([translated_time_tab, current_line_lyric])
 
-
         # 返回输出列表
         return output_list
 
+    # 计算所有的翻译时间标签，然后更新二级列表
+    # 和上面的方法不同，这个方法会更新二级列表
+    def calculate_all_translated_time_tab_and_update_secondary_lyric_list(self,
+                                                                          percentage: float = 0.5,
+                                                                          last_line_time_tab_limit: float = 0,
+                                                                          ) -> "Lyric_file":
+        """
+        中文：\n
+        计算所有的翻译时间标签，然后更新二级列表。
+
+        English: \n
+        Calculate all translated time tags and update the secondary list.
+
+        :param percentage: float
+        :param last_line_time_tab_limit: float
+        :return: Self
+        """
+        # 调用方法
+        # 暂存结果
+        individual_result: list[list[Optional[Lyric_Time_tab.Lyric_Time_tab], Optional[str]]] = \
+            self.calculate_all_translated_time_tab(percentage, last_line_time_tab_limit)
+
+        # 更新二级列表
+        # 根据时间标签排序
+        # 换行歌词自动打包，翻译歌词只能添加在
+        # 换行歌词的后面 或者 带时间标签的歌词的前面
+        # 如果没有换行歌词，那么就添加在时间标签的后面
+        # 先打包换行歌词
+        # 例子：
+        # [时间标签1，[歌词1行1，歌词1行2，歌词1行3]]
+        # [时间标签2，[歌词2]]
+        # [时间标签3，[歌词3行1，歌词3行2]]
+
+        # 临时列表
+        temp_list: list[list[Lyric_Time_tab.Lyric_Time_tab, list[str]]] = []
+
+        # 遍历每一行
+        for line in self.lrc_lines_secondary:
+            # 带时间标签的歌词
+            if line[0] is not None:
+                # 加入临时列表
+                temp_list.append([line[0], [line[1]]])
+            # 换行歌词
+            else:
+                # 加入歌词列表
+                temp_list[-1][1].append(line[1])
+
+        # 打包翻译歌词
+        # 用对每一行操作
+        # 遍历每一行
+        for line in individual_result:
+
+
+
+
+
+
+        # 返回自身
+        return self
