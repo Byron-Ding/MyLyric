@@ -1,2 +1,4 @@
 # PyLrc
-A python modual for processing and analysising Lrc files.
+A python modual for processing and analysising Lrc files. 
+
+Not Completed, completing...
