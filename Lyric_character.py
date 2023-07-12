@@ -12,6 +12,7 @@ class Lyric_character(UserString):
 
     # CJKV 汉字字符集Unicode编码范围
     # 汉字和喃字的 Unicode 区间
+    # 在原有的列表后面追加新的元组
     CHINESE_OR_CHU_NOM_RANGES: list[tuple[int, int]] = [
         (0x2E80, 0x2EFF),  # CJK 部首补充
         (0x2F00, 0x2FDF),  # 康熙部首
@@ -24,7 +25,12 @@ class Lyric_character(UserString):
         (0x2B740, 0x2B81F),  # CJK 统一表意符号扩展 D
         (0x2B820, 0x2CEAF),  # CJK 统一表意符号扩展 E
         (0x2CEB0, 0x2EBEF),  # CJK 统一表意符号扩展 F
-        (0xAA60, 0xAA7F)  # 喃字补充
+        (0xAA60, 0xAA7F),  # 喃字补充
+        (0x3005, 0x3005),  # 汉字叠字符号々
+        (0x303B, 0x303B),  # 汉字叠字符号〻
+        (0x20120, 0x20120),  # 多字叠字符号𠄠
+        (0x16FE3, 0x16FE3),  # 多字叠字符号𖿣
+        (0x2E80, 0x2E80)  # ⺀
     ]
 
     """
@@ -32,6 +38,7 @@ class Lyric_character(UserString):
     """
 
     def __init__(self, character: str, time_tab: Optional[Lyric_Time_tab] = None):
+        self.initial_data: str = character
         super().__init__(character)
 
         # 时间
@@ -39,9 +46,12 @@ class Lyric_character(UserString):
         self.global_time_tab: Optional[Lyric_Time_tab] = time_tab
 
     @staticmethod
-    def is_chinese_or_chu_nom_or_chinese_radical_staticmethod(single_character: str) -> bool:
-        char_code: int = ord(single_character)  # 获取字符的 Unicode 编码
+    def is_chinese_or_chu_nom_or_chinese_radical_staticmethod(single_character: Optional[str]) -> bool:
+        # print(single_character, type(single_character))
+        if single_character is None or single_character == "":
+            return False
 
+        char_code: int = ord(single_character)  # 获取字符的 Unicode 编码
         start: int
         end: int
         for start, end in Lyric_character.CHINESE_OR_CHU_NOM_RANGES:
@@ -51,7 +61,10 @@ class Lyric_character(UserString):
 
     # 非静态方法
     def is_chinese_or_chu_nom_or_chinese_radical(self) -> bool:
-        return Lyric_character.is_chinese_or_chu_nom_or_chinese_radical_staticmethod(self.data)
+        if self.initial_data == "":
+            return False
+        else:
+            return Lyric_character.is_chinese_or_chu_nom_or_chinese_radical_staticmethod(self.initial_data)
 
 
 
@@ -59,7 +72,9 @@ class Lyric_character(UserString):
 if __name__ == '__main__':
     a_time_tab = Lyric_Time_tab("<00:00.50>", "strict")
 
-    a = Lyric_character('a', a_time_tab)
+    a = Lyric_character('覗', a_time_tab)
     print(a)
     print(a.global_time_tab)
     print(a.data)
+    print(a.is_chinese_or_chu_nom_or_chinese_radical())
+    print(Lyric_character.is_chinese_or_chu_nom_or_chinese_radical_staticmethod('々'))
