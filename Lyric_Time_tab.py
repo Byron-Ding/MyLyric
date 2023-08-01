@@ -119,7 +119,7 @@ class Lyric_Time_tab:
     接受一个时间标签字符串，分离出时间标签的各个部分
     """
 
-    def __init__(self, tab: str, mode: str = 'normal'):
+    def __init__(self, tab: Optional[str], mode: str = 'normal'):
         # 时间标签原始字符串
         self.original_time_tab: str = tab
         # 修改或者规范后的时间标签字符串
@@ -128,7 +128,7 @@ class Lyric_Time_tab:
         # 时间标签类型 [] or <>
         self.brackets: Optional[list[str, str]] = None
         # 时间戳
-        self.time_stamp: Optional[int] = None
+        self.time_stamp: Optional[float] = None
 
         # 原始匹配结果
         self.match_result: Optional[Match[str]] = None
@@ -153,8 +153,9 @@ class Lyric_Time_tab:
         # 预分离时间标签
         if tab is not None:
             self.__pre_separating(tab, mode)
-
-        pass
+        else:
+            # print("Time tab None input, notice!")
+            pass
 
     # 返回时间标签时间戳
     def __int__(self):
@@ -277,7 +278,6 @@ class Lyric_Time_tab:
         else:
             raise TypeError('unsupported operand type(s) for **: \'TimeTab\' and \'{}\''.format(type(other)))
 
-
     def __radd__(self, other):
         return self.__add__(other)
 
@@ -377,6 +377,8 @@ class Lyric_Time_tab:
 
             # 调用函数，计算时间戳
             self.time_stamp = Lyric_Time_tab.calculate_time_stamp(minutes_int, seconds_int, milliseconds_int)
+
+            # print(self.time_stamp)
 
         # 如果不合法
         else:
@@ -617,6 +619,8 @@ class Lyric_Time_tab:
         # 输出的毫秒位长度
         # 不足则右边补0
         millisecond_str = millisecond_str.ljust(len_of_millisecond_output, "0")
+        # 截取
+        millisecond_str = millisecond_str[:len_of_millisecond_output]
 
         # 加上 左右括号 和 分隔符
         # 格式化字符串
@@ -650,11 +654,15 @@ class Lyric_Time_tab:
         :param seperator: 分隔符 The seperator
         :return: 时间标签 The time tag
         """
-        return Lyric_Time_tab.convert_time_stamp_to_time_tab_static(self.time_stamp,
-                                                                    len_of_millisecond_inputted,
-                                                                    len_of_millisecond_output,
-                                                                    brackets,
-                                                                    seperator)
+        # 如果time stamp是None，返回空字符串，表明没有时间标签
+        if self.time_stamp is None:
+            return ""
+        else:
+            return Lyric_Time_tab.convert_time_stamp_to_time_tab_static(self.time_stamp,
+                                                                        len_of_millisecond_inputted,
+                                                                        len_of_millisecond_output,
+                                                                        brackets,
+                                                                        seperator)
 
     # 返回自身
     def shift_time(self,
@@ -701,10 +709,10 @@ class Lyric_Time_tab:
         return self
 
     # 返回自身
-    def format_time_tab(self,
-                        brackets: Optional[tuple[str, str]],
-                        seperator: Optional[tuple[str, str]]
-                        ) -> Self:
+    def format_time_tab_self(self,
+                             brackets: Optional[tuple[str, str]],
+                             seperator: Optional[tuple[str, str]]
+                             ) -> Self:
         """
         中文：\n
         格式化时间标签对象本身 \n
@@ -804,6 +812,9 @@ class Lyric_Time_tab:
 
         return self
 
+    def isspace(self) -> bool:
+        return self.original_time_tab.isspace()
+
 
 """
 中文：\n
@@ -820,7 +831,6 @@ if __name__ == '__main__':
     print(Lyric_Time_tab.TIME_TAB_EACH_LINE_NORMAL_REGREX.pattern)
 
     print(Lyric_Time_tab.calculate_time_stamp(10, 1, 100))
-
 
     # 测试时间标签 += 运算符
     time_tab = Lyric_Time_tab("[00:00.00]")

@@ -43,7 +43,7 @@ class Lyric_character(UserString):
 
         # 时间
         # 调用Time_tab类
-        self.global_time_tab: Optional[Lyric_Time_tab] = time_tab
+        self.time_tab: Optional[Lyric_Time_tab] = time_tab
 
     @staticmethod
     def is_chinese_or_chu_nom_or_chinese_radical_staticmethod(single_character: Optional[str]) -> bool:
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     a = Lyric_character('覗', a_time_tab)
     print(a)
-    print(a.global_time_tab)
+    print(a.time_tab)
     print(a.data)
     print(a.is_chinese_or_chu_nom_or_chinese_radical())
     print(Lyric_character.is_chinese_or_chu_nom_or_chinese_radical_staticmethod('々'))

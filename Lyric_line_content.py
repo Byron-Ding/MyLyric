@@ -1,11 +1,13 @@
 from typing import Optional, Pattern, List, Self
-from collections import OrderedDict
+from collections import UserList
+
+from Lyric_content import Lyric_content
 from Lyric_Time_tab import Lyric_Time_tab
 from Lyric_character import Lyric_character
 import re
 
 
-class Lyric_line_content(OrderedDict):
+class Lyric_line_content(UserList):
     """
     歌词行内容类
     接受字符串，预先分割
@@ -33,7 +35,7 @@ class Lyric_line_content(OrderedDict):
         super().__init__()
 
         self.pronunciation_list = pronunciation_list
-        self.line: str = line
+        self.original_line: str = line
 
         # 预分离字符串
         self._time_char_list: list[list[str, str]] = Lyric_line_content.split_line_to_time_and_char(line,
@@ -53,6 +55,8 @@ class Lyric_line_content(OrderedDict):
 
             self.time_char_object_list.append(each_char_object)
 
+        self.data = self.time_char_object_list
+
         # 读音列表
         self.update_pronunciation_list(pronunciation_list)
 
@@ -61,33 +65,36 @@ class Lyric_line_content(OrderedDict):
         if isinstance(other, Lyric_line_content):
             # 判断是否有发音列表
             if self.pronunciation_list is None and other.pronunciation_list is None:
-                return Lyric_line_content(self.line + other.line, None)
+                return Lyric_line_content(self.original_line + other.original_line, None)
             elif self.pronunciation_list is None:
-                return Lyric_line_content(self.line + other.line, other.pronunciation_list)
+                return Lyric_line_content(self.original_line + other.original_line, other.pronunciation_list)
             elif other.pronunciation_list is None:
-                return Lyric_line_content(self.line + other.line, self.pronunciation_list)
+                return Lyric_line_content(self.original_line + other.original_line, self.pronunciation_list)
             else:
-                return Lyric_line_content(self.line + other.line,
+                return Lyric_line_content(self.original_line + other.original_line,
                                           self.pronunciation_list.append(other.pronunciation_list))
 
         elif isinstance(other, str):
-            return Lyric_line_content(self.line + other, self.pronunciation_list.append(["", 0]))
+            return Lyric_line_content(self.original_line + other, self.pronunciation_list.append(["", 0]))
 
         else:
             raise TypeError("Unsupported operand type(s) for +: 'Lyric_line_content' and '{}'".format(type(other)))
 
     def __radd__(self, other):
         if isinstance(other, str):
-            return Lyric_line_content(other + self.line, self.pronunciation_list.append(["", 0]))
+            return Lyric_line_content(other + self.original_line, self.pronunciation_list.append(["", 0]))
 
         else:
             raise TypeError("Unsupported operand type(s) for +: 'Lyric_line_content' and '{}'".format(type(other)))
 
     def __str__(self):
-        return self.line
+        return self.original_line
+
+    def __repr__(self):
+        return self.original_line
 
     def isspace(self):
-        return self.line.isspace()
+        return self.original_line.isspace()
 
     """
     对应发音和自身字符
@@ -102,6 +109,7 @@ class Lyric_line_content(OrderedDict):
             ]
         ] = pronunciation_list
 
+        # 验错区
         # 开始对应发音（振假名）和字符
         # 如果没有发音，则填入None
         # 但是先检查列表是否等长，如果不等长，就报错
@@ -113,17 +121,19 @@ class Lyric_line_content(OrderedDict):
             elif self.check_pronunciation_list_validity() is False:
                 raise ValueError("Invalid pronunciation_list")
 
+        # 处理区
         # 对应发音和字符
         if self.pronunciation_list is None:
+            # 初始化
+            self.pronunciation_list = []
             # 循环字符对象列表
             for each_char_object in self.time_char_object_list:
+                # print(each_char_object)
                 # 对应字符和发音
-                self[each_char_object] = ["", 0]
+                self.pronunciation_list.append(["", 0])
         else:
-            # 循环发音列表
-            for index in range(len(self.pronunciation_list)):
-                # 对应字符和发音
-                self[self.time_char_object_list[index]] = self.pronunciation_list[index]
+            # 直接对应
+            self.pronunciation_list = self.pronunciation_list
 
         return self
 
@@ -410,6 +420,24 @@ class Lyric_line_content(OrderedDict):
 
         return result
 
+    def format_content(self,
+                       len_of_millisecond_output: int = 2,
+                       seperator: tuple[str, str] = (":", "."),
+                       bracket: tuple[str, str] = ("<", ">")
+                       ) -> str:
+        output_str: str = ""
+        for each_lyric_character in self:
+            each_lyric_character: Lyric_character
+
+            each_time_tab = each_lyric_character.time_tab
+            each_time_tab_str = each_time_tab.convert_to_time_tab(len_of_millisecond_output=len_of_millisecond_output,
+                                                                  seperator=seperator,
+                                                                  brackets=bracket)
+
+            output_str += (str(each_time_tab_str) + str(each_lyric_character))
+
+        return output_str
+
 
 if __name__ == '__main__':
     # test_str: str = " <00:0.0>あ <00:01:000>い <00:02:000>う <00:03:000>え <00:04:000>お1 <00:04:000>"
@@ -419,17 +447,20 @@ if __name__ == '__main__':
     # print(Lyric_line_content.split_line_to_time_and_char(test_str, "very_loose"))
 
     # 测试Lyric_line_content.get_all_chinese_and_chu_nom_and_chinese_radical
-    test_str: str = " <00:0.0>あNi你他 <00:01:000>い <00:02:000>う <00:03:000>え <00:04:000>お1 <00:04:000>"
+    test_str: str = " <00:0.0>あNi你他 <00:01:000>い  <00:02:000>う <00:03:000>え <00:04:000>お1 <00:04:000>"
     Lrc_line_content_obj = Lyric_line_content(test_str, separation_mode="very_loose")
     print(Lrc_line_content_obj.get_all_chinese_and_chu_nom_and_chinese_radical())
-    print(Lrc_line_content_obj.keys())
-    print(Lrc_line_content_obj.values())
+    print(Lrc_line_content_obj.time_char_object_list)
+    print(Lrc_line_content_obj.pronunciation_list)
 
     # 测试加法
-    print(a := Lyric_line_content("a") + Lyric_line_content("b"))
+    # print(a := Lyric_line_content("a") + Lyric_line_content("b"))
 
-    print(a["a"])
+    # print(a["a"])
 
-    print(Lyric_line_content("").keys())
-    print(Lyric_line_content("").values())
-    print(Lyric_line_content("").line)
+    c = Lyric_line_content("")
+    print(c.time_char_object_list)
+    print(c.pronunciation_list)
+    print(c.data)
+    output = Lrc_line_content_obj.format_content()
+    print(output)
