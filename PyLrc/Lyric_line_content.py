@@ -1,7 +1,6 @@
-from typing import Optional, Pattern, List, Self
+from typing import Optional, Pattern, Self
 from collections import UserList
 
-from Lyric_content import Lyric_content
 from Lyric_Time_tab import Lyric_Time_tab
 from Lyric_character import Lyric_character
 import re
