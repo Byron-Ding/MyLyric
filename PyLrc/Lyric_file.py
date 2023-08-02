@@ -1047,7 +1047,7 @@ if __name__ == '__main__':
     # 测试
     # 读取文件
 
-    with open("Test_Files/ブルーバード (青鸟) - 生物股长 (いきものがかり).lrc", mode="r", encoding="utf-8") as f:
+    with open("../Test_Files/ブルーバード (青鸟) - 生物股长 (いきものがかり).lrc", mode="r", encoding="utf-8") as f:
         content = f.read()
         print(content)
 

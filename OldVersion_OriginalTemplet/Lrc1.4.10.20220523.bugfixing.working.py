@@ -5,7 +5,6 @@ from typing import Optional
 from typing import Union
 from typing import Pattern
 import typing
-import Lyric_Time_tab
 
 # import _io
 
