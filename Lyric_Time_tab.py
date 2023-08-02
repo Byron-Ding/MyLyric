@@ -157,13 +157,16 @@ class Lyric_Time_tab:
             # print("Time tab None input, notice!")
             pass
 
+        # 最后初始化 self.time_tab， 为 self.original_time_tab
+        self.time_tab = self.original_time_tab
+
     # 返回时间标签时间戳
     def __int__(self):
         return self.time_stamp
 
     # 返回时间标签字符串
     def __str__(self):
-        return self.original_time_tab
+        return self.time_tab
 
     # 返回时间标签列表
     def __repr__(self):

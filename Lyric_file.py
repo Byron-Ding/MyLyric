@@ -7,7 +7,7 @@ from typing import Pattern, Match
 from typing import Callable
 from Lyric_Time_tab import Lyric_Time_tab
 from Lyric_line_content import Lyric_line_content
-
+from Lyric_line import Lyric_line
 
 
 class Lyric_file:
@@ -31,12 +31,12 @@ class Lyric_file:
     # 分为两组
     # groups: (左括号，分，冒号，秒，冒号或者点，毫秒，右括号)[时间标签组]，歌词内容[歌词内容组]
     # 例如：[00:00.00]歌词内容
-    LRC_CONTENT_REGEX: Pattern = re.compile(r"^(?P<time_tab>(\[)?(\d+)(:)(\d+)([.:])(\d*)(])?)?"
+    LRC_CONTENT_REGEX: Pattern = re.compile(r"^(?P<time_tab>((\[)?(\d+)(:)(\d+)([.:])(\d*)(])?)*)"
                                             r"(?P<lrc_content>.*)$")
 
     # 标准格式
     INFORMATION_TAG_REGEX_STANDARD: Pattern = re.compile(r"^(\[)(?P<tag>[a-zA-Z].*):(?P<tag_content>.*)(])$")
-    LRC_CONTENT_REGEX_STANDARD: Pattern = re.compile(r"^(?P<time_tab>(\[)(\d{2})(:)(\d{2})(\.)(\d{2})(])?)"
+    LRC_CONTENT_REGEX_STANDARD: Pattern = re.compile(r"^(?P<time_tab>((\[)(\d{2})(:)(\d{2})(\.)(\d{2})(])?)*)"
                                                      r"(?P<lrc_content>.*)$")
 
     # ==================== 正则表达式区结束 ====================
@@ -68,8 +68,7 @@ class Lyric_file:
         self.lrc_lines_primary_initial: list[str] = []
         # 二级列表，每个元素为一行歌词，每行歌词为一个列表，列表第一个元素为时间标签类或者None（表示只有内容），第二个元素为歌词内容(也是一个类)
         # 之后所有的操作都是基于这个列表，这个列表是最终的歌词内容
-        self.lrc_lines_secondary: list[list[Optional[Lyric_Time_tab],
-                                            Lyric_line_content]] = []
+        self.lrc_lines_secondary: list[Lyric_line] = []
 
         # ==================== 歌词的内容属性区结束 ====================
 
@@ -147,7 +146,6 @@ class Lyric_file:
         # 预分离处理
         # 调用预分离处理函数
         self.__pre_separation(lrc_content, mode)
-
 
         # ==================== 预分离处理结束 ====================
 
@@ -272,29 +270,46 @@ class Lyric_file:
         time: str | Optional[Lyric_Time_tab]
         # 获取时间
         time: str = each_line_match.group("time_tab")
+
+        # 分离时间标签，可能有多个时间标签，所以是列表
+        time_str_list: list[tuple[str]] = Lyric_Time_tab.TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX.findall(time)
+
+        # 因为有括号，所以是元组的列表，需要转为字符串的列表
+        time_str_list: list[str] = ["".join(each_time_tab_element_tuple)
+                                    for each_time_tab_element_tuple in time_str_list]
+
         # 获取歌词
         lrc: str = each_line_match.group("lrc_content")
 
         # 转为类
         lrc_obj: Lyric_line_content = Lyric_line_content(lrc,
-                                                                                               separation_mode=mode)
+                                                         separation_mode=mode)
 
         # 判断时间 是否为空
-        if time:
-            time_obj: Optional[Lyric_Time_tab] = Lyric_Time_tab(time, mode)
+        if time_str_list:
+            time_obj: Optional[list[Lyric_Time_tab]] = []
+            # 转为类的列表
+            for each_time in time_str_list:
+                # 转为类
+                each_time_obj: Optional[Lyric_Time_tab] = Lyric_Time_tab(each_time, mode)
+                # 放入一级歌词列表中
+                time_obj.append(each_time_obj)
+
         # 如果为空，转为 None
         else:
-            time_obj: Optional[Lyric_Time_tab] = None
+            time_obj: Optional[list[Lyric_Time_tab]] = None
+
+        # 包装成类
+        each_lyric_line_obj: Lyric_line = Lyric_line(time_obj, [lrc_obj])
 
         # 放入二级歌词列表中
-        self.lrc_lines_secondary.append([time_obj, lrc_obj])
+        self.lrc_lines_secondary.append(each_lyric_line_obj)
         # 合并跨行歌词
         self.merge_cross_line_lyrics()
 
     # 合并跨行歌词
     @staticmethod
-    def merge_cross_line_lyrics_static(secondary_lyric_list: list[Any,
-                                                                  Lyric_line_content]
+    def merge_cross_line_lyrics_static(secondary_lyric_list: list[Lyric_line]
                                        ) -> list[Any,
                                                  Lyric_line_content]:
         """
@@ -309,7 +324,7 @@ class Lyric_file:
 
         # 检测第一行是否有时间标签
         # 没有或者空白字符串，报错
-        if secondary_lyric_list[0][0] is None or secondary_lyric_list[0][0].isspace():
+        if secondary_lyric_list[0].time_tabs is None or secondary_lyric_list[0].time_tabs == []:
             raise ValueError("The first line of lyrics does not have a time tag")
 
         # 返回的列表
@@ -506,24 +521,20 @@ class Lyric_file:
     # 默认输入的是歌词内容的二级列表
     # 默认的第一行有时间标签，所以直接从第二行开始判断，忽略第一行
     @staticmethod
-    def combine_lyric_separated_to_continuous_lines_static(input_lyric_lines: list[
-        list[Any,
-             Lyric_line_content],
-    ],
+    def combine_lyric_separated_to_continuous_lines_static(input_lyric_lines: list[Lyric_line],
                                                            separator: str = "\n",
-                                                           ) -> list[list[Any,
-                                                                          Lyric_line_content]]:
+                                                           ) -> list[Lyric_line]:
         """
         中文：\n
         合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符。
         第一行有时间标签，后面的行没有时间标签，直到下一个有时间标签的行。
 
         English: \n
-        Combine the lyrics separated by line breaks into continuous lines (separated by \n in the middle),
+        Combine the lyrics separated by each_lyric_line_object breaks into continuous lines (separated by \n in the middle),
         or you can specify a separator.
-        The first line has a time tag,
+        The first each_lyric_line_object has a time tag,
          and the following lines do not have a time tag,
-         until a line with a time tag.
+         until a each_lyric_line_object with a time tag.
 
         For example: \n
         [00:00.00] 我的家
@@ -534,54 +545,42 @@ class Lyric_file:
         [00:00.00] 我的家\n在那东北松花江上
         [00:03.00] 我的家\n那里有森林煤矿
 
-        :param input_lyric_lines: list[list[Lyric_Time_tab, str]]
+        :param input_lyric_lines: list[Lyric_line]
         :param separator: str
         :return: list[list[Lyric_Time_tab, str]]
         """
 
         # 新的列表
-        output_list: list[list[Lyric_Time_tab | str,
-                               Lyric_line_content]] = []
+        output_list: list[Lyric_line] = []
 
         # 先确认第一行有时间标签或者是非空字符串
-        if not (input_lyric_lines[0][0]):
-            raise ValueError("The first line of the input list does not have a time tag or is an empty string.")
+        if not input_lyric_lines[0].lyric_contents:
+            raise ValueError("The first each_lyric_line_object of the input list"
+                             " does not have a time tag or is an empty string.")
 
         # 遍历每一行
-        for line in input_lyric_lines:
-            line: list[Optional[Lyric_Time_tab | str],
-                       Lyric_line_content]
+        for each_lyric_line_object in input_lyric_lines:
+            each_lyric_line_object: Lyric_line
             # 已经封装成Lyric_Time_tab对象了
             # 直接调用加法即可
 
             # 如果是第一行，那么直接放入新列表
-            if line == input_lyric_lines[0]:
-                output_list.append(line)
+            if each_lyric_line_object == input_lyric_lines[0]:
+                output_list.append(each_lyric_line_object)
             # 如果不是第一行
             else:
                 # 如果这一行没有时间标签，那么就和前一行合并
                 # 注意这里的时间标签可以是Lyric_Time_tab对象，也可以是字符串
                 # 只要不是None就行或者不是空字符串就行
-                if line[0] is None:
-                    line[0]: None
+                if each_lyric_line_object.time_tabs is None:
                     # 直接字符串拼接
-                    output_list[-1][1] = output_list[-1][1] + separator + line[1]
-
-                elif isinstance(line[0], str):
-                    line[0]: str
-                    if line[0] == "":
-                        # 直接字符串拼接
-                        output_list[-1][1] = output_list[-1][1] + separator + line[1]
-
-                elif isinstance(line[0], Lyric_Time_tab):
-                    line[0]: Lyric_Time_tab
-                    if line[0].time_tab == "" or line[0].time_tab is None or line[0].time_tab.isspace():
-                        # 直接字符串拼接
-                        output_list[-1][1] = output_list[-1][1] + separator + line[1]
+                    output_list[-1].lyric_contents[-1] = output_list[-1].lyric_contents[0] \
+                                                         + separator \
+                                                         + each_lyric_line_object.lyric_contents[0]
 
                 # 如果这一行有时间标签，那么就直接放入新列表
                 else:
-                    output_list.append(line)
+                    output_list.append(each_lyric_line_object)
 
         # 返回新列表
         return output_list
@@ -589,8 +588,7 @@ class Lyric_file:
     # 实例方法
     def combine_lyric_separated_to_continuous_lines(self,
                                                     separator: str = "\n",
-                                                    ) -> list[list[Any,
-                                                                   Lyric_line_content]]:
+                                                    ) -> list[Lyric_line]:
         """
         中文：\n
         合并换行的歌词为连续的行（中间用\n分割），也可以指定分隔符。
@@ -631,14 +629,10 @@ class Lyric_file:
     # 将歌词的二级列表转换为一级列表
     # 二级列表的每一行的第一个元素是时间标签，第二个元素是歌词内容
     @staticmethod
-    def convert_secondary_lyric_list_to_primary_list_static(input_lyric_lines: list[
-        list[Any, Lyric_line_content],
-    ],
-                                                            time_tab_str_function: Callable[[Any], str]
-                                                            = lambda x: str(x),
-                                                            lyric_line_content_str_function: Callable[
-                                                                [Lyric_line_content], str]
-                                                            = lambda x: str(x),
+    def convert_secondary_lyric_list_to_primary_list_static(input_lyric_lines: list[Lyric_line],
+                                                            len_of_millisecond_output: int = 2,
+                                                            seperator_each_line: tuple[str, str] = (":", "."),
+                                                            seperator_inline: tuple[str, str] = (":", ".")
                                                             ) -> list[str]:
         """
         中文：\n
@@ -650,12 +644,16 @@ class Lyric_file:
         :param input_lyric_lines: list[list[Lyric_Time_tab | str, str]]
         原始的二级列表
         Original secondary list
-        :param time_tab_str_function: Callable[[Any], str]
-        转换时间标签到str的函数
-        The function that converts the time tag to str
-        :param lyric_line_content_str_function: Callable[[Lyric_line_content], str]
-        转换歌词内容到str的函数
-        The function that converts the lyrics content to str
+        :param len_of_millisecond_output: int
+        输出的毫秒长度
+        The length of the output milliseconds
+        :param seperator_each_line: tuple[str, str]
+        每一行时间标签的分隔符
+        Separator for each line
+        :param seperator_inline: tuple[str, str]
+        每一行内部时间标签的分隔符
+        Separator inside each line
+
 
         :return: list[str]
         一级列表
@@ -672,8 +670,10 @@ class Lyric_file:
 
         # 遍历每一行
         for line in input_lyric_lines:
-            each_line: str = time_tab_str_function(line[0]) \
-                             + lyric_line_content_str_function(line[1])
+            each_line: str = line.format_output(len_of_millisecond_output=len_of_millisecond_output,
+                                                seperator_each_line=seperator_each_line,
+                                                seperator_inline=seperator_inline
+                                                )
 
             # 放入新列表
             output_list.append(each_line)
@@ -947,6 +947,57 @@ class Lyric_file:
         # 返回输出列表
         return self
 
+    # 合并时间标签，把相同的歌词合并
+    def compress_time_tab(self):
+        # [00:00.00]歌词
+        # [00:00.01]歌词
+        # [00:00.02]歌词
+        # 合并成 [00:00.00][00:00.01][00:00.02]歌词
+
+        # 输出列表
+        output_list: list[Lyric_line] = []
+
+        for current_index, current_line in enumerate(self.lrc_lines_secondary):
+            # 如果是第一行，那么就直接加入
+            if current_index == 0:
+                output_list.append(current_line)
+
+            # 接下来每一行 都与之前的每一行比较
+            # 如果歌词相同，那么就合并时间标签
+            # 如果歌词不同，那么就直接加入
+            else:
+                for each_previous_line in output_list:
+                    if each_previous_line.whether_same_lyric(current_line):
+                        # 合并时间标签
+                        each_previous_line.time_tabs += current_line.time_tabs
+                        # 因为是合并，所以不需要再继续比较了，会出现重复
+                        break
+                else:
+                    # 如果没有合并，那么就直接加入
+                    output_list.append(current_line)
+
+        # 覆盖原来的列表
+        self.lrc_lines_secondary = output_list
+
+        # 返回自身
+        return self
+
+    # 解压时间标签，把多个时间标签拆分成多行
+    def decompress_time_tab(self) -> Self:
+        # 输出列表
+        output_list: list[Lyric_line] = []
+
+        # 遍历每一行
+        # 调用函数解压
+        for current_line in self.lrc_lines_secondary:
+            output_list += current_line.decompress_time_tab()
+
+        self.lrc_lines_secondary = sorted(output_list)
+
+        # 返回自身
+        return self
+
+
     '''
     # 普通输出
     def output(self) -> str:
@@ -966,41 +1017,17 @@ class Lyric_file:
 
         time_tab_str: str
         # 遍历每一行
-        for line in self.lrc_lines_secondary:
-            # 两个成分，时间标签和歌词
-            # 两个类
-            time_tab: Lyric_Time_tab | None = line[0]
-            lyric_line_content: Lyric_line_content | None = line[1]
+        for each_lyric_line in self.lrc_lines_secondary:
+            each_lyric_line_str = each_lyric_line.format_output(len_of_millisecond_output=len_of_millisecond_output,
+                                                                seperator_each_line=seperator_each_line,
+                                                                seperator_inline=seperator_inline)
 
-            # 时间标签，排除None
-            if time_tab is None:
-                time_tab: None
-                time_tab_str = ""
-            else:
-                time_tab: Lyric_Time_tab
-                time_tab_str = time_tab.convert_to_time_tab(
-                    len_of_millisecond_output=len_of_millisecond_output,
-                    seperator=seperator_each_line
-                )
+            output_str += each_lyric_line_str + "\n"
 
-            # 歌词，排除None
-            if lyric_line_content is None:
-                lyric_line_content: None
-                lyric_line_content_str = ""
-            else:
-                lyric_line_content: Lyric_line_content
-                lyric_line_content_str = lyric_line_content.format_content(
-                    len_of_millisecond_output=len_of_millisecond_output,
-                    seperator=seperator_inline
-                )
-
-            # 拼接
-            output_str += time_tab_str + lyric_line_content_str + "\n"
-
+        # 去除最后一个换行符
+        output_str = output_str[:-1]
 
         return output_str
-
-
 
 
 if __name__ == '__main__':
@@ -1011,9 +1038,21 @@ if __name__ == '__main__':
         content = f.read()
         print(content)
 
+    a = Lyric_file.LRC_CONTENT_REGEX.match('[00:00.00][10:12:22]ブルーバード - 生物股长 (いきものがかり)')
+
+    print(b := a.group("time_tab"))
+    c = Lyric_Time_tab.TIME_TAB_EACH_LINE_VERY_LOOSE_REGREX.match(b)
+    print(c)
+
     Lyric_file_Test_File_青鸟 = Lyric_file(content)
 
     print(Lyric_file_Test_File_青鸟.judge_standard_form())
-    # Lyric_file_Test_File_青鸟.combine_lyric_separated_to_continuous_lines()
+    Lyric_file_Test_File_青鸟.combine_lyric_separated_to_continuous_lines()
     a = Lyric_file_Test_File_青鸟.lrc_lines_secondary
+    # print(Lyric_file_Test_File_青鸟.format_output(len_of_millisecond_output=2))
+    b = Lyric_file_Test_File_青鸟.compress_time_tab()
+    print(Lyric_file_Test_File_青鸟.format_output(len_of_millisecond_output=2))
+
+    print("\n\n\n\n\n")
+    c = Lyric_file_Test_File_青鸟.decompress_time_tab()
     print(Lyric_file_Test_File_青鸟.format_output(len_of_millisecond_output=2))
