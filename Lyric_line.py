@@ -142,6 +142,23 @@ class Lyric_line:
         # 只看歌词内容
         return self.lyric_contents == other.lyric_contents
 
+    def shift_time(self,
+                   minutes: int,
+                   seconds: int,
+                   milliseconds: int,
+                   len_of_millisecond: int = 3
+                   ) -> Self:
+        # 时间标签整体向后移动
+        # 遍历时间标签
+        for time_tab in self.time_tabs:
+            time_tab.shift_time(minutes=minutes,
+                                seconds=seconds,
+                                milliseconds=milliseconds,
+                                len_of_millisecond=len_of_millisecond)
+
+        return self
+
+
 
 if __name__ == '__main__':
     # 测试

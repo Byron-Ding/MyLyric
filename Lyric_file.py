@@ -997,7 +997,6 @@ class Lyric_file:
         # 返回自身
         return self
 
-
     '''
     # 普通输出
     def output(self) -> str:
@@ -1028,6 +1027,20 @@ class Lyric_file:
         output_str = output_str[:-1]
 
         return output_str
+
+    def shift_time(self,
+                   minutes: int,
+                   seconds: int,
+                   milliseconds: int,
+                   len_of_millisecond: int = 3
+                   ) -> Self:
+        for each_lyric_line in self.lrc_lines_secondary:
+            each_lyric_line.shift_time(minutes=minutes,
+                                       seconds=seconds,
+                                       milliseconds=milliseconds,
+                                       len_of_millisecond=len_of_millisecond)
+
+        return self
 
 
 if __name__ == '__main__':
