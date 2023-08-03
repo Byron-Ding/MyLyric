@@ -1,6 +1,6 @@
 # 导入unittest模块
 import unittest
-from PyLrc import Lyric_line_content
+from MyLyric import Lyric_line_content
 
 
 # 定义一个测试类，继承自unittest.TestCase

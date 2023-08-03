@@ -1,4 +1,4 @@
-import Lyric_Time_tab
+from MyLyric import Lyric_Time_tab
 
 
 # 歌词类

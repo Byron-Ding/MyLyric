@@ -5,9 +5,9 @@ from typing import Optional, Self
 from typing import Union
 from typing import Pattern, Match
 from typing import Callable
-from Lyric_Time_tab import Lyric_Time_tab
-from Lyric_line_content import Lyric_line_content
-from Lyric_line import Lyric_line
+from .Lyric_Time_tab import Lyric_Time_tab
+from .Lyric_line_content import Lyric_line_content
+from .Lyric_line import Lyric_line
 
 
 class Lyric_file:
@@ -1014,6 +1014,26 @@ class Lyric_file:
         # 用于输出字符串
         output_str: str = ""
 
+        # 先添加信息
+        if self.artist:
+            output_str += "[ar:" + self.artist + "]\n"
+        if self.album:
+            output_str += "[al:" + self.album + "]\n"
+        if self.title:
+            output_str += "[ti:" + self.title + "]\n"
+        if self.length:
+            output_str += "[length:" + self.length + "]\n"
+        if self.lyric_writer:
+            output_str += "[au:" + self.lyric_writer + "]\n"
+        if self.lrc_file_writer:
+            output_str += "[by:" + self.lrc_file_writer + "]\n"
+        if self.creating_software:
+            output_str += "[re:" + self.creating_software + "]\n"
+        if self.version:
+            output_str += "[ve:" + self.version + "]\n"
+        if self.kana:
+            output_str += "[kana:" + self.kana + "]\n"
+
         time_tab_str: str
         # 遍历每一行
         for each_lyric_line in self.lrc_lines_secondary:
@@ -1042,12 +1062,19 @@ class Lyric_file:
 
         return self
 
+    def get_all_chinese_and_chu_nom_and_chinese_radical_list_each_line(self):
+        output_list = []
+        for each_lyric_line in self.lrc_lines_secondary:
+            output_list.append(each_lyric_line.get_all_chinese_and_chu_nom_and_chinese_radical())
+
+        return output_list
+
 
 if __name__ == '__main__':
     # 测试
     # 读取文件
 
-    with open("../Test_Files/ブルーバード (青鸟) - 生物股长 (いきものがかり).lrc", mode="r", encoding="utf-8") as f:
+    with open("../../Test_Files/ブルーバード (青鸟) - 生物股长 (いきものがかり).lrc", mode="r", encoding="utf-8") as f:
         content = f.read()
         print(content)
 

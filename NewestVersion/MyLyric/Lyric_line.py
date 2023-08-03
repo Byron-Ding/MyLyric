@@ -1,6 +1,6 @@
 from typing import Optional, Self
-from Lyric_Time_tab import Lyric_Time_tab
-from Lyric_line_content import Lyric_line_content
+from .Lyric_Time_tab import Lyric_Time_tab
+from .Lyric_line_content import Lyric_line_content
 
 
 class Lyric_line:
@@ -157,6 +157,19 @@ class Lyric_line:
                                 len_of_millisecond=len_of_millisecond)
 
         return self
+
+    def get_all_chinese_and_chu_nom_and_chinese_radical(self) -> list:
+        # 输出列表
+        output_list: list = []
+
+        # 逐个拼接
+        for each_lyric_content in self.lyric_contents:
+            each_lyric_content_CJKV: list[list[str, int]]\
+                = each_lyric_content.get_all_chinese_and_chu_nom_and_chinese_radical()
+
+            output_list += each_lyric_content_CJKV
+
+        return output_list
 
 
 
