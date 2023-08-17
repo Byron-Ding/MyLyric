@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="MyLyric",
-    version="2.0.1",
+    version="2.1.0",
     author="Ding Zedong",
     author_email="2701690963@qq.com",
     license="License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",

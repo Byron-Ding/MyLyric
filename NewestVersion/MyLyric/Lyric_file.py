@@ -1,13 +1,13 @@
 import re
 import warnings
-from typing import Any
+from typing import Any, Iterator, List
 from typing import Optional, Self
 from typing import Union
 from typing import Pattern, Match
 from typing import Callable
-from .Lyric_Time_tab import Lyric_Time_tab
-from .Lyric_line_content import Lyric_line_content
-from .Lyric_line import Lyric_line
+from Lyric_Time_tab import Lyric_Time_tab
+from Lyric_line_content import Lyric_line_content
+from Lyric_line import Lyric_line
 
 
 class Lyric_file:
@@ -38,6 +38,11 @@ class Lyric_file:
     INFORMATION_TAG_REGEX_STANDARD: Pattern = re.compile(r"^(\[)(?P<tag>[a-zA-Z].*):(?P<tag_content>.*)(])$")
     LRC_CONTENT_REGEX_STANDARD: Pattern = re.compile(r"^(?P<time_tab>((\[)(\d{2})(:)(\d{2})(\.)(\d{2})(])?)*)"
                                                      r"(?P<lrc_content>.*)$")
+
+    EACH_PROUNUNCIATION_GROUP_IN_KANA_REGEX: Pattern = re.compile(r"(?P<all_group>"
+                                                                  r"(?P<character_length>\d)"
+                                                                  r"(?P<pronounciation>\D*)"
+                                                                  r")")
 
     # ==================== 正则表达式区结束 ====================
 
@@ -216,6 +221,13 @@ class Lyric_file:
                 # 歌词内容处理函数
                 self.__lrc_content_processing(line, mode)
 
+        # 最后处理
+        # 考虑到涉及整个文件的内容
+        # 处理kana
+        pronunciation_each_line = self.extract_kana_tag()
+        # 更新每行的读音
+        self.update_pronunciation(pronunciation_each_line)
+
     # 歌词信息处理函数
     # 传入参数为歌词信息的字符串
     def __lrc_information_processing(self, each_line_match: Match) -> None:
@@ -248,6 +260,8 @@ class Lyric_file:
             tag_value = each_line_match.group("tag_content")
             # 添加到字典中
             self.nonstandard_tag_dict[tag_name] = tag_value
+
+
 
     # 歌词内容处理函数
     # 传入参数为歌词内容的字符串
@@ -1032,7 +1046,14 @@ class Lyric_file:
         if self.version:
             output_str += "[ve:" + self.version + "]\n"
         if self.kana:
-            output_str += "[kana:" + self.kana + "]\n"
+            output_str += "[kana:" + self.get_total_kana_tag() + "]\n"
+
+        # 对自定义标签，非标准进行输出
+        # 名字在之前的列表中
+        for each_customized_tag, value in self.nonstandard_tag_dict:
+            each_customized_tag: str
+            value: str
+            output_str += "[" + each_customized_tag + ":" + value + "]\n"
 
         time_tab_str: str
         # 遍历每一行
@@ -1048,6 +1069,10 @@ class Lyric_file:
 
         return output_str
 
+
+    def update_kana_tag(self) -> Self:
+        self.kana = self.get_total_kana_tag()
+
     def shift_time(self,
                    minutes: int,
                    seconds: int,
@@ -1062,12 +1087,110 @@ class Lyric_file:
 
         return self
 
-    def get_all_chinese_and_chu_nom_and_chinese_radical_list_each_line(self):
+    def get_all_chinese_and_chu_nom_and_chinese_radical_list_each_line(self) -> list[list[list[str, int]]]:
         output_list = []
         for each_lyric_line in self.lrc_lines_secondary:
             output_list.append(each_lyric_line.get_all_chinese_and_chu_nom_and_chinese_radical())
 
         return output_list
+
+
+    def extract_kana_tag(self) -> list[list[list[Lyric_line_content, int]]]:
+        CJKV_list = self.get_all_chinese_and_chu_nom_and_chinese_radical_list_each_line()
+
+        # 统计每行有多少个CJKV字符
+        CJKV_count_each_line: list[int] = [len(each_line) for each_line in CJKV_list]
+
+        # kana分解
+        kana_character_list: list[list[str, int]] = self.split_kana_tag_to_characters(self.kana)
+        # 每一行的综合体
+        kana_character_line_list: list[list[list[str, int]]] = []
+        # 累加器
+        clc: int = 0
+        # 对应每一行
+        for each_line_number in CJKV_count_each_line:
+            # 从累加器开始，到累加器+当前行的CJKV字符数
+            kana_character_line_list.append(kana_character_list[clc:clc + each_line_number])
+            # 累加
+            clc += each_line_number
+
+        # 输出列表
+        # 输出的长发音列表，发音列表(行的长度，就是那个[])
+        output_list: list[list[list[Lyric_line_content, int]]] = []
+        # 对应每一行
+        for each_line_CJKV_index, \
+            each_line_pronunciation_list, \
+            character_number_each_line \
+                in zip(CJKV_list,
+                       kana_character_line_list,
+                       CJKV_count_each_line):
+
+            # 直接调用方法
+            each_line_pronunciation_full_list:  list[list[Lyric_line_content, int]]\
+                = Lyric_line_content.extend_pronunciation_list(
+                each_line_CJKV_index,
+                each_line_pronunciation_list,
+                character_number_each_line
+            )
+
+            # 加到输出列表
+            output_list.append(each_line_pronunciation_full_list)
+
+        return output_list
+
+    @staticmethod
+    def split_kana_tag_to_characters(kana_tag_content: str) -> list[list[str, int]]:
+        # 第一个必须是数字，表示接下来几个字符是对应该读音
+        # 分解kana标签
+        kana_tag_list: list[list[str, int]] = []
+
+        if kana_tag_content is None:
+            return kana_tag_list
+
+        # 第一个必须是数字，表示接下来几个字符是对应该读音
+        elif kana_tag_content[0].isdigit():
+            # 否则报错
+            raise ValueError("The first character of kana tag must be a number representing the number of characters "
+                             " corresponding to the reading.")
+
+        else:
+            # 匹配每个读音
+            # 格式：[长度][读音（非数字）]
+            matched_pronunciation_groups: Iterator[Match[str | bytes | Any]] = \
+                Lyric_file.EACH_PROUNUNCIATION_GROUP_IN_KANA_REGEX.finditer(kana_tag_content)
+
+            for each_matched_pronunciation_group in matched_pronunciation_groups:
+                # [读音，长度]
+                each_small_list: list[str, int] = [each_matched_pronunciation_group.group("pronunciation"),
+                                                   each_matched_pronunciation_group.group("length")]
+                kana_tag_list.append(each_small_list)
+
+        return kana_tag_list
+
+
+    def get_total_kana_tag(self) -> str:
+
+        # 输出字符串
+        output_list: str = ""
+
+        for each_line in self.lrc_lines_secondary:
+            each_line: Lyric_line
+            # 调用每行的方法，得到每行的读音
+            kana_tag_each_line = each_line.get_kana_tag()
+
+            # 加入每行的读音
+            output_list += kana_tag_each_line
+
+        return output_list
+
+    def update_pronunciation(self, pronunciation_each_line: list[list[list[Lyric_line_content, int]]]) -> Self:
+        # 逐行更新
+        for each_line, each_line_pronunciation in zip(self.lrc_lines_secondary, pronunciation_each_line):
+            each_line: Lyric_line
+            each_line_pronunciation: list[list[Lyric_line_content, int]]
+
+            # 更新
+            each_line.update_pronunciation(each_line_pronunciation)
 
 
 if __name__ == '__main__':
@@ -1096,3 +1219,9 @@ if __name__ == '__main__':
     print("\n\n\n\n\n")
     c = Lyric_file_Test_File_青鸟.decompress_time_tab()
     print(Lyric_file_Test_File_青鸟.format_output(len_of_millisecond_output=2))
+
+    kana_tag = Lyric_file_Test_File_青鸟.kana
+    print(kana_tag)
+    print(matched_kana := Lyric_file.EACH_PROUNUNCIATION_GROUP_IN_KANA_REGEX.finditer(kana_tag))
+    for i in matched_kana:
+        print(i.groups())

@@ -1,8 +1,8 @@
 from typing import Optional, Pattern, Self
 from collections import UserList
 
-from .Lyric_Time_tab import Lyric_Time_tab
-from .Lyric_character import Lyric_character
+from Lyric_Time_tab import Lyric_Time_tab
+from Lyric_character import Lyric_character
 import re
 
 
@@ -98,7 +98,7 @@ class Lyric_line_content(UserList):
     """
     对应发音和自身字符
     """
-    def update_pronunciation_list(self, pronunciation_list) -> Self:
+    def update_pronunciation_list(self, pronunciation_list: list[list[Self, int]]) -> Self:
         # 更新发音列表
         # None表示全段没有读音
         self.pronunciation_list: Optional[
@@ -308,7 +308,7 @@ class Lyric_line_content(UserList):
     @staticmethod
     def extend_pronunciation_list(character_indexes: list[list[str | Self, int]],
                                   character_pronunciations: list[list[str, int]],
-                                  length: int) -> list[list[Self | int], Optional[int]]:
+                                  length: int) -> list[list[Self | str, int]]:
 
         # 提取所有索引, 不考虑乱序
         character_indexes_only: list[int] = [character_index[1] for character_index in character_indexes]
@@ -434,6 +434,42 @@ class Lyric_line_content(UserList):
                                                                   brackets=bracket)
 
             output_str += (str(each_time_tab_str) + str(each_lyric_character))
+
+        return output_str
+
+
+    def get_kana_tag(self) -> str:
+        """
+        获取假名标签 形式的字符串
+        Get kana tag type string
+
+        :return: 假名标签
+         Kana tag
+
+        :rtype: str
+        """
+        # 获取读音列表
+        pronunciation_list = self.pronunciation_list
+
+        output_str: str = ""
+
+        # 逐个遍历
+        for each_pronunciation in pronunciation_list:
+            each_pronunciation: list[str, int]
+
+            # 先看占位符
+            if each_pronunciation[1] is None:
+                continue
+            # 再看读音
+            else:
+                if each_pronunciation[0] is None:
+                    # 不可以是None，否则会报警告
+                    SyntaxWarning("Pronunciation cannot be None, maybe use \"\" to  substitute it")
+                    continue
+
+                # 另外的情况就加到结果字符串中
+                # 以，长度+读音的形式
+                output_str += (str(each_pronunciation[1]) + str(each_pronunciation[0]))
 
         return output_str
 

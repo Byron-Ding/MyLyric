@@ -1,5 +1,5 @@
 from collections import UserString
-from .Lyric_Time_tab import Lyric_Time_tab
+from Lyric_Time_tab import Lyric_Time_tab
 from typing import Optional, Union
 
 """

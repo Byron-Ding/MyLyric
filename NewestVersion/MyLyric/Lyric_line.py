@@ -1,6 +1,6 @@
 from typing import Optional, Self
-from .Lyric_Time_tab import Lyric_Time_tab
-from .Lyric_line_content import Lyric_line_content
+from Lyric_Time_tab import Lyric_Time_tab
+from Lyric_line_content import Lyric_line_content
 
 
 class Lyric_line:
@@ -13,6 +13,7 @@ class Lyric_line:
         # 自动排序
         self.time_tabs: Optional[list[Lyric_Time_tab]] = sorted(time_tab_list)
 
+        # 向后兼容，用列表存储
         self.lyric_contents: list[Lyric_line_content] = lyric_content_list
 
     def __str__(self):
@@ -158,19 +159,31 @@ class Lyric_line:
 
         return self
 
-    def get_all_chinese_and_chu_nom_and_chinese_radical(self) -> list:
+    def get_all_chinese_and_chu_nom_and_chinese_radical(self) -> list[list[str, int]]:
         # 输出列表
-        output_list: list = []
+        output_list: list[list[str, int]] = []
 
         # 逐个拼接
         for each_lyric_content in self.lyric_contents:
-            each_lyric_content_CJKV: list[list[str, int]]\
+            each_lyric_content_CJKV: list[list[str, int]] \
                 = each_lyric_content.get_all_chinese_and_chu_nom_and_chinese_radical()
 
             output_list += each_lyric_content_CJKV
 
         return output_list
 
+    def get_kana_tag(self) -> str:
+        output_str = ""
+        for each_lyric_line_content in self.lyric_contents:
+            output_str += each_lyric_line_content.get_kana_tag()
+
+        return output_str
+
+    def update_pronunciation(self, pronunciation_each_line: list[list[Lyric_line_content, int]]):
+        if len(self.lyric_contents) == 1:
+            self.lyric_contents[0].update_pronunciation_list(pronunciation_each_line)
+        else:
+            raise ValueError("Multiple lyric contents in one lyric line, not supported")
 
 
 if __name__ == '__main__':
