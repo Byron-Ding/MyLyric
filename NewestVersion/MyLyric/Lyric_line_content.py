@@ -1,8 +1,8 @@
 from typing import Optional, Pattern, Self
 from collections import UserList
 
-from Lyric_Time_tab import Lyric_Time_tab
-from Lyric_character import Lyric_character
+from .Lyric_Time_tab import Lyric_Time_tab
+from .Lyric_character import Lyric_character
 import re
 
 

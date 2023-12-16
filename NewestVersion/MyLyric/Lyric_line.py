@@ -1,6 +1,6 @@
 from typing import Optional, Self
-from Lyric_Time_tab import Lyric_Time_tab
-from Lyric_line_content import Lyric_line_content
+from .Lyric_Time_tab import Lyric_Time_tab
+from .Lyric_line_content import Lyric_line_content
 
 
 class Lyric_line:

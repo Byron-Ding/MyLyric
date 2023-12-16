@@ -5,12 +5,32 @@ from typing import Optional, Self
 from typing import Union
 from typing import Pattern, Match
 from typing import Callable
-from Lyric_Time_tab import Lyric_Time_tab
-from Lyric_line_content import Lyric_line_content
-from Lyric_line import Lyric_line
+from .Lyric_Time_tab import Lyric_Time_tab
+from .Lyric_line_content import Lyric_line_content
+from .Lyric_line import Lyric_line
 
 
 class Lyric_file:
+    """
+    中文：\n
+    初始化函数，接受一个参数，参数类型为str或者list，分别对应文件内容和文件内容的列表形式 \n
+    \n
+    str 为文件内容 \n
+    list 为文件内容的列表形式，每个元素为一行歌词
+
+    English: \n
+    Initialization function, accepts one parameter,
+    the parameter type is str or list,
+    which corresponds to the file content
+    and the list form of the file content respectively \n
+    \n
+    str is the file content \n
+    list is the list form of the file content, each element is a line of lyrics
+
+    :param lrc_content: Union[str, list]
+    :return: None
+    """
+
     """
     同时兼容文件和文件内容
     其实没有必要，可以用另外一个函数生成饭后返回实例化后的本类
@@ -1191,6 +1211,15 @@ class Lyric_file:
 
             # 更新
             each_line.update_pronunciation(each_line_pronunciation)
+
+        return self
+
+    '''
+    转为srt字幕
+    '''
+    def _to_srt(self) -> str:
+        pass
+
 
 
 if __name__ == '__main__':
