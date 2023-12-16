@@ -9,7 +9,8 @@
 name: Upload Python Package
 
 on:
-  pull_request:
+  release:
+    types: [created]
     branches:
     - release/NewestVersion/*
 
