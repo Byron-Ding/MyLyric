@@ -22,5 +22,7 @@ from MyLyric import Lyric_file
 from MyLyric import Lyric_line
 from MyLyric import Lyric_line_content
 ```
+Just use Lyric file to process the whole Lyric File.
+The package supports Kana Tag.
 
 Except to_srt() function, and to_json(), the library is usable.
