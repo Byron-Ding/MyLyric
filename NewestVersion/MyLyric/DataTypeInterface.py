@@ -1,7 +1,6 @@
-import datetime
+import abc
 import typing
-from functools import wraps
-from typing import Any, TypeGuard, Union, Callable
+from typing import Any, TypeGuard
 from typing_extensions import Protocol
 from abc import abstractmethod
 
@@ -33,8 +32,7 @@ def str_len_eq_1_guard(var: str) -> TypeGuard[str]:
     else:
         raise ValueError(var + ' must be a string with length of 1')
 
-
-class Comparable(Protocol):
+class Comparable(Protocol, metaclass=abc.ABCMeta):
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
         pass
@@ -56,7 +54,7 @@ class Comparable(Protocol):
         return not self == other
 
 
-class Calculable(Protocol):
+class Calculable(Protocol, metaclass=abc.ABCMeta):
     @abstractmethod
     def __add__(self, other: Any) -> Any:
         pass
@@ -94,7 +92,7 @@ class Calculable(Protocol):
         pass
 
 
-class BinaryCalculable(Protocol):
+class BinaryCalculable(Protocol, metaclass=abc.ABCMeta):
     @abstractmethod
     def __and__(self, other: Any) -> Any:
         pass
@@ -122,3 +120,7 @@ class BinaryCalculable(Protocol):
 
 
 
+if __name__ == '__main__':
+    # try to make abstract class instance
+    # 尝试实例化抽象类
+    comparable = Comparable()

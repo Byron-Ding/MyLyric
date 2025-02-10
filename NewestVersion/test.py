@@ -1,6 +1,5 @@
 import datetime
 import re
-import warnings
 from typing import Final, Pattern
 
 t = datetime.time(minute=2, second=3, microsecond=4)

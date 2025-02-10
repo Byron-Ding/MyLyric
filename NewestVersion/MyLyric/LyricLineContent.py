@@ -1,6 +1,5 @@
 import math
 import warnings
-from gc import enable
 from typing import Optional, Pattern, Self, Union, List, Tuple
 from collections import UserList, UserString
 
@@ -9,8 +8,6 @@ from LyricCharacter import LyricCharacter
 import re
 
 from DataTypeInterface import var_type_guard
-
-from functools import wraps  # 装饰器
 
 """
 设计读音字符格式
@@ -33,7 +30,7 @@ class LyricPronunciationGroup(UserList):
 
     def __init__(self,
                  base_str: list[LyricCharacter] | UserList[LyricCharacter],
-                 pronunciation_line_list: list[Self] | UserList[Self] | None = None
+                 pronunciation_line_list: list[Self] | UserList[Self] | None = None,
                  ) -> None:
         """
         字符组 对应 读音
@@ -52,6 +49,14 @@ class LyricPronunciationGroup(UserList):
         # [LyricPronunciationGroup, LyricPronunciationGroup, LyricPronunciationGroup]
         # 但是总列表只对应一个 Base_str
         self._pronunciation_line_list: list[Self] | UserList[Self] | None  = pronunciation_line_list
+
+        self._has_pronunciation: bool = False if pronunciation_line_list is None else True
+        self._has_time: bool = False
+        for each_char in base_str:
+            each_char: LyricCharacter
+            if each_char.time_tab is not None:
+                self._has_time = True
+                break
 
         # ========= Type Guard 🛡️ =========
         # 如果不是列表，抛出异常
@@ -137,11 +142,72 @@ class LyricPronunciationGroup(UserList):
         """
         return "" if self._pronunciation_line_list is None\
             else "".join([str(each_char) for each_char in self._pronunciation_line_list if not each_char.isdigit()])
+
+    def get_plain_text_format_base_on_inner_parm(self,
+                                                 max_recursion_depth: Optional[int] = None,
+                                                 current_layer: int = 0
+                                                 ) -> str:
+        """
+        返回 歌词(读音) 根据自带的参数
+
+        Return Lyric(Reading) based on the inner parameters
+
+        :param max_recursion_depth: 最大递归深度
+        :param current_layer: 当前递归层数
+        :return: 歌词(读音)
+        """
+
+        # 如果有时间，返回 Char + 时间
+        base_str: str = ""
+        for each_char in self.data:
+            if each_char.time_tab is not None:
+                each_char: LyricCharacter
+                base_str += each_char.get_timed_character(
+                    min_len_of_minutes=each_char.time_tab.min_len_of_minutes,
+                    min_len_of_seconds=each_char.time_tab.min_len_of_seconds,
+                    min_len_of_millisecond=each_char.time_tab.min_len_of_millisecond,
+                    cut_off_millisecond=each_char.time_tab.cut_off_millisecond,
+                    brackets=each_char.time_tab.brackets,
+                    seperator=(each_char.time_tab.minutes_seconds_seperator,
+                               each_char.time_tab.seconds_milliseconds_seperator
+                               )
+                )
+            # 无，直接拼接
+            else:
+                base_str: str = "".join([str(each_char) for each_char in self.data])
+
+        # 需要递归-------------------------
+        # 在递归层数内
+        if max_recursion_depth is not None and current_layer <= max_recursion_depth:
+            # 如果没有读音，返回原始字符串，不带()
+            if self.pronunciation_line_list is None:
+                # 如果没有读音，返回原始字符串，不带()
+                pass
+            # 否则递归
+            else:
+                for each_pronunciation in self.pronunciation_line_list:
+                    # 需要读音 则 后带后缀
+                    if each_pronunciation.pronunciation_line_list is not None:
+                        each_pronunciation: Self
+                        # 外(内甲(...)内乙(...)内丙(...)...)
+                        base_str += ("("
+                                     + each_pronunciation.
+                                         get_plain_text_format_base_on_inner_parm(
+                                        max_recursion_depth=max_recursion_depth,
+                                        current_layer=current_layer + 1
+                                    )
+                                    + ")"
+                                    )
+        # 超出递归层数
+        else:
+            ...
+
+        return base_str
     
 
     # 递归遍历读音的读音，直到没有读音
     def get_plain_text_format(self,
-                              max_layer: Optional[int] = None,
+                              max_recursion_depth: Optional[int] = None,
                               enable_time: bool = True,
                               enable_pronunciation: bool = True,
                               min_len_of_minutes: Optional[Union[int, "math.inf"]] = 2,
@@ -181,7 +247,7 @@ class LyricPronunciationGroup(UserList):
         # 需要读音 则 后带后缀
         if enable_pronunciation:
             # 在递归层数内
-            if max_layer is not None and current_layer <= max_layer:
+            if max_recursion_depth is not None and current_layer <= max_recursion_depth:
                 # 如果没有读音，返回原始字符串，不带()
                 if self.pronunciation_line_list is None:
                     # 如果没有读音，返回原始字符串，不带()
@@ -194,7 +260,7 @@ class LyricPronunciationGroup(UserList):
                         base_str += ("("
                                      + each_pronunciation.
                                          get_plain_text_format(
-                                        max_layer=max_layer,
+                                        max_recursion_depth=max_recursion_depth,
                                         enable_time=enable_time,
                                         enable_pronunciation=enable_pronunciation,
                                         min_len_of_minutes=min_len_of_minutes,
@@ -213,6 +279,23 @@ class LyricPronunciationGroup(UserList):
 
         return base_str
 
+    def get_plain_text_format_standard(self,
+                                       enable_time: bool = True,
+                                       enable_pronunciation: bool = True
+                                       ) -> str:
+        """
+        返回 歌词(读音)
+
+        Return Lyric(Reading)
+
+        :return: 歌词(读音)
+        """
+
+        return self.get_plain_text_format(
+            enable_time=enable_time,
+            enable_pronunciation=enable_pronunciation
+        )
+
     @staticmethod
     def pronunciation_type_guard(outer_word: "LyricPronunciationGroup") -> None:
         """
@@ -223,7 +306,7 @@ class LyricPronunciationGroup(UserList):
 
         if outer_word.pronunciation_line_list is not None:
             # 忽略类型检查，因为目前不支持Property的类型检查
-            outer_word.pronunciation_line_list: LyricPronunciationGroup
+            # outer_word.pronunciation_line_list: LyricPronunciationGroup
             for each_pronunciation in outer_word.pronunciation_line_list:
                 LyricPronunciationGroup.pronunciation_type_guard(each_pronunciation)
 
@@ -293,39 +376,47 @@ class LyricLineContent(UserList):
     """
 
     def __init__(self,
-                 lyric_pronunciation_list: UserList[LyricPronunciationGroup] |
-                                           list[LyricPronunciationGroup] | Union[str, UserString],
-                 separation_mode: str = "normal",
-                 self_defined_pattern: Optional[Pattern] = None
+                 lyric_base_char_list: UserList[LyricPronunciationGroup] |
+                                           list[LyricPronunciationGroup] |
+                                           Union[str, UserString],
+                 mode: Union[tuple[str, Optional[Pattern[str]]], list[str, Optional[Pattern[str]]]] = ('normal', None)
                  ):
 
         # ========= Type Guard 🛡️ =========
         # pronunciation_list: list, UserList, None
-        self.pronunciation_type_guard(lyric_pronunciation_list)
+        self.pronunciation_type_guard(lyric_base_char_list)
 
         # ========= 备份参数 =========
-        if isinstance(lyric_pronunciation_list, (str, UserString)):
-
+        if isinstance(lyric_base_char_list, (str, UserString)):
             # 预分离字符串
-            self._lyric_char_list: list[LyricCharacter] \
-                = LyricLineContent.split_line_to_time_and_char(line=lyric_pronunciation_list,
-                                                               time_tab_separation_mode=separation_mode,
-                                                               self_defined_pattern=self_defined_pattern)
+            self._lyric_char_list: list[LyricCharacter]
+            self.whether_extension: bool
+            self._lyric_char_list, self.whether_extension \
+                = LyricLineContent.split_line_to_time_and_char(line=lyric_base_char_list,
+                                                               mode=mode
+                                                               )
             # Full - None
             self._lyric_pronunciation_list = [
                 LyricPronunciationGroup(base_str=self._lyric_char_list, pronunciation_line_list=None)
             ]
-        elif isinstance(lyric_pronunciation_list, (list, UserList)):
-            lyric_pronunciation_list: list[LyricPronunciationGroup]
+        elif isinstance(lyric_base_char_list, (list, UserList)):
+            lyric_base_char_list: list[LyricPronunciationGroup]
             # 字符-读音 列表
-            self._lyric_pronunciation_list = lyric_pronunciation_list
+            self._lyric_pronunciation_list = lyric_base_char_list
             # 单字符串
             self._lyric_char_list = []
-            for group in lyric_pronunciation_list:
+            for group in lyric_base_char_list:
                 group: LyricPronunciationGroup
                 self._lyric_char_list.append(*group.original_annotated_string)
+
+            # 检查是否有时间
+            for each_char in self._lyric_char_list:
+                each_char: LyricCharacter
+                if each_char.time_tab is not None:
+                    self.whether_extension = True
+                    break
         else:
-            pass
+            raise ValueError("lyric_base_char_list must be in (list, UserList, str, UserString)")
 
         # 有序双射列表
         super().__init__(self._lyric_char_list)
@@ -356,18 +447,14 @@ class LyricLineContent(UserList):
         var_type_guard(other, (LyricLineContent,))
 
         # 设置读音（类型为 LyricPronunciationGroup）的时候自动生成了 LyricCharacter 列表
-        return LyricLineContent(
-            lyric_pronunciation_list=self._lyric_pronunciation_list + other._lyric_pronunciation_list
-        )
+        return LyricLineContent(lyric_base_char_list=self._lyric_pronunciation_list + other._lyric_pronunciation_list)
 
     def __mul__(self, other: int) -> Self:
         """
         重复
         """
         var_type_guard(other, (int,))
-        return LyricLineContent(
-            lyric_pronunciation_list=self._lyric_pronunciation_list * other
-        )
+        return LyricLineContent(lyric_base_char_list=self._lyric_pronunciation_list * other)
 
 
     @property
@@ -410,9 +497,8 @@ class LyricLineContent(UserList):
 
     @staticmethod
     def split_line_to_time_and_char(line: str,
-                                    time_tab_separation_mode: str = "normal",
-                                    self_defined_pattern: Optional[Pattern] = None
-                                    ) -> list[LyricCharacter]:
+                                    mode: tuple[str, Optional[Pattern[str]]] = ('normal', None)
+                                    ) -> tuple[list[LyricCharacter], bool]:
         """
         预分离字符串
         输入格式：时间+字符串+时间+字符串+时间+字符串...
@@ -420,22 +506,22 @@ class LyricLineContent(UserList):
         没有时间的字符，时间填None，没有字符的时间，字符填None
 
         :param line: 字符串
-        :param time_tab_separation_mode: 分离模式
-        :param self_defined_pattern: 自定义正则表达式
+        :param mode: 分离模式 (分离模式，自定义正则表达式)
         :return: 分离后的字符串列表
         """
 
         # ================== 决定分离模式 ==================
         separation_pattern: Pattern
 
+        time_tab_separation_mode, self_defined_pattern = mode
         # 自定义
         if time_tab_separation_mode == "self_defined":
             if self_defined_pattern is None:
                 raise ValueError("self_defined_pattern must be specified when separation_mode is self_defined")
             separation_pattern = self_defined_pattern
-        # 否则按照默认的正则表达式分离
+        # 否则按照默认正则表达式分离
         elif time_tab_separation_mode in LyricTimeTab.MODE_TYPE:
-            separation_pattern = LyricTimeTab.TIME_TAB_DIFFERENT_MODE_REGREX[time_tab_separation_mode]
+            separation_pattern = LyricTimeTab.TIME_TAB_MODE_REGREX_PAIR[time_tab_separation_mode]
             if self_defined_pattern is not None:
                 warnings.warn("self_defined_pattern will be ignored when separation_mode is not self_defined")
         # 不合法
@@ -449,8 +535,12 @@ class LyricLineContent(UserList):
         # 初始化上一个匹配的结束位置为 0
         prev_end: int = 0
 
+        extension_mode: bool = False
+
         # 使用正则表达式匹配时间标签
         for matched_char_time_tab in re.finditer(separation_pattern, line):
+            # 有匹配到
+            extension_mode = True
             # 获取匹配的起始和结束位置
             start, end = matched_char_time_tab.span()
 
@@ -480,20 +570,32 @@ class LyricLineContent(UserList):
             # 更新上一个匹配的结束位置
             prev_end = end
 
+
         # 如果最后一个匹配的结束位置不是字符串的末尾(带字符本身)，说明最后一个匹配之后还有其他字符
         if prev_end + 1 < len(line):
-            for char in line[prev_end + 1:]:
+            # 如果一个都没匹配，说明整个字符串都是字符，没有时间标签，还在句首
+            # 否则，仍然需要排除 <Tab>X 的 X
+            if prev_end != 0:
+                prev_end += 1
+            # 添加最后一个匹配之后的字符
+            for char in line[prev_end:]:
                 result.append(LyricCharacter(character=char, time_tab=None))
         # 否则，说明最后一个匹配之后没有其他字符
         # 啥也不做
         else:
             pass
 
-        return result
+        return result, extension_mode
 
     """
     将日语kana标签转换为发音列表
     """
+
+    def is_empty(self) -> bool:
+        """
+        判断是否为空
+        """
+        return self.base_str.isspace()
 
     '''
     利用方法Lyric_character。is_chinese_or_chu_nom_or_chinese_radical_staticmethod
@@ -552,22 +654,44 @@ class LyricLineContent(UserList):
 
         return result
 
-    def format_content(self,
-                       max_layer: Optional[int] = None,
-                       enable_time: bool = True,
-                       enable_pronunciation: bool = False,
-                       min_len_of_minutes: Optional[Union[int, "math.inf"]] = 2,
-                       min_len_of_seconds: Optional[int] = 2,
-                       min_len_of_millisecond: Optional[Union[int, "math.inf"]] = 2,
-                       cut_off_millisecond: bool = True,
-                       seperator: tuple[str, str] = (":", "."),
-                       bracket: tuple[str, str] = ("<", ">")
-                       ) -> str:
+    def get_plain_text_format_base_on_inner_parm(self,
+                                                 max_recursion_depth: Optional[int] = None,
+                                                 ) -> str:
+        """
+        返回 歌词(读音) 根据自带的参数
+
+        Return Lyric(Reading) based on the inner parameters
+
+        :param max_recursion_depth: 最大递归深度
+        :return: 歌词(读音)
+        """
+
+        output_str: str = ""
+        for each_pronunciation in self.pronunciation_list:
+            each_pronunciation: LyricPronunciationGroup
+            output_str += each_pronunciation.get_plain_text_format_base_on_inner_parm(
+                max_recursion_depth=max_recursion_depth
+            )
+
+        return output_str
+
+
+    def get_plain_text_format(self,
+                              max_recursion_depth: Optional[int] = None,
+                              enable_time: bool = True,
+                              enable_pronunciation: bool = False,
+                              min_len_of_minutes: Optional[Union[int, "math.inf"]] = 2,
+                              min_len_of_seconds: Optional[int] = 2,
+                              min_len_of_millisecond: Optional[Union[int, "math.inf"]] = 2,
+                              cut_off_millisecond: bool = True,
+                              seperator: tuple[str, str] = (":", "."),
+                              bracket: tuple[str, str] = ("<", ">")
+                              ) -> str:
         output_str: str = ""
         for each_pronunciation in self.pronunciation_list:
             each_pronunciation: LyricPronunciationGroup
             output_str += each_pronunciation.get_plain_text_format(
-                max_layer=max_layer,
+                max_recursion_depth=max_recursion_depth,
                 enable_time=enable_time,
                 enable_pronunciation=enable_pronunciation,
                 min_len_of_minutes=min_len_of_minutes,
@@ -580,17 +704,14 @@ class LyricLineContent(UserList):
 
         return output_str
 
-    def format_content_standard(self,
-                                enable_time: bool = True,
-                                enable_pronunciation: bool = False
-                                ) -> str:
+    def get_plain_text_format_standard(self,
+                                       enable_time: bool = True,
+                                       enable_pronunciation: bool = False
+                                       ) -> str:
         """
         格式化输出
         """
-        return self.format_content(
-            enable_time=enable_time,
-            enable_pronunciation=enable_pronunciation
-        )
+        return self.get_plain_text_format(enable_time=enable_time, enable_pronunciation=enable_pronunciation)
 
 
     def get_kana_tag(self) -> str:
@@ -744,7 +865,7 @@ if __name__ == '__main__':
 
     # 测试Lyric_line_content.get_all_chinese_and_chu_nom_and_chinese_radical
     test_str: str = "1<00:0.0>あNi你他 <00:01:000>い  <00:02:000>う <00:03:000>え <00:04:000>お7 <00:04:000>X"
-    Lrc_line_content_obj = LyricLineContent(test_str, separation_mode="very_loose")
+    Lrc_line_content_obj = LyricLineContent(test_str, mode=("very_loose", None))
     Lrc_line_content_obj.pronunciation_list = [
             LyricPronunciationGroup(base_str=Lrc_line_content_obj.lyric_char_list,
                                     pronunciation_line_list=
@@ -755,14 +876,17 @@ if __name__ == '__main__':
     print(Lrc_line_content_obj.lyric_char_list)
     print(Lrc_line_content_obj.pronunciation_list)
     print(Lrc_line_content_obj.get_all_cjkv())
-    print(Lrc_line_content_obj.format_content())
+    print(Lrc_line_content_obj.get_plain_text_format())
     print(test_str)
 
     print("==========================================")
 
-    print(Lrc_line_content_obj.format_content(min_len_of_minutes=1, min_len_of_seconds=1, min_len_of_millisecond=1))
-    print(Lrc_line_content_obj.format_content(min_len_of_minutes=1, min_len_of_seconds=1, min_len_of_millisecond=1, enable_pronunciation=True))
-    print(no_tab_line := Lrc_line_content_obj.format_content(min_len_of_minutes=1, min_len_of_seconds=1, min_len_of_millisecond=1, enable_time=False))
+    print(Lrc_line_content_obj.get_plain_text_format(min_len_of_minutes=1, min_len_of_seconds=1,
+                                                     min_len_of_millisecond=1))
+    print(Lrc_line_content_obj.get_plain_text_format(enable_pronunciation=True, min_len_of_minutes=1,
+                                                     min_len_of_seconds=1, min_len_of_millisecond=1))
+    print(no_tab_line := Lrc_line_content_obj.get_plain_text_format(enable_time=False, min_len_of_minutes=1,
+                                                                    min_len_of_seconds=1, min_len_of_millisecond=1))
     print(no_tab_line == "".join([str(char) for char in Lrc_line_content_obj.lyric_char_list]))
 
     print("==========================================")
@@ -772,7 +896,7 @@ if __name__ == '__main__':
 
 
     print("==========================================")
-    KANA_EXAMPLE = "あ1い1う1えお2"
+    KANA_EXAMPLE = "你1い1う1えお2"
     print(iterator := re.finditer(LyricPronunciationGroup.KANA_TAB_REGREX, KANA_EXAMPLE))
     print(next(iterator).group())
     print(Lrc_line_content_obj.get_kana_tag())
@@ -781,7 +905,8 @@ if __name__ == '__main__':
     print(Lrc_line_content_obj.base_str)
     print(Lrc_line_content_obj.pronunciation)
     print(type(Lrc_line_content_obj.pronunciation))
-    print(Lrc_line_content_obj.format_content(enable_time=True, enable_pronunciation=True, max_layer=1))
+    print(
+        Lrc_line_content_obj.get_plain_text_format(max_recursion_depth=2, enable_time=True, enable_pronunciation=True))
 
 
     # print(Lrc_line_content_obj.time_char_object_list)

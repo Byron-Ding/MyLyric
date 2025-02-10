@@ -7,7 +7,6 @@ from typing import Callable, Union, Any, Optional, List, Tuple
 from typing import Final
 from typing import Match, Pattern
 from typing import Self
-from xmlrpc.client import Binary
 
 from bidict import bidict
 
@@ -19,7 +18,7 @@ from DataTypeInterface import Comparable, Calculable, C, BinaryCalculable
 from DataTypeInterface import var_type_guard, int_leq_0_guard
 
 
-class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
+class LyricTimeTab(UserString, Comparable, Calculable, BinaryCalculable, ):
     """
     中文注释： 
     LRC 歌词格式的 时间标签类
@@ -96,7 +95,7 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
                                                 'seconds', 'seconds_milliseconds_seperator', 'milliseconds',
                                                 'right_bracket'}
 
-    # 歌词每个字的时间标签的正则表达式 <>
+    # 歌词每个字的时间标签的正则表达式 <> []
     # 严格模式时间标签的正则表达式
     TIME_TAB_STRICT_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>[\[<])'
                                                              r'(?P<minutes>\d{2})'
@@ -115,28 +114,114 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
                                                              r'(?P<right_bracket>[]>])')
     # 宽松模式时间标签的正则表达式
     TIME_TAB_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>[\[<])'
-                                                            r'(?P<minutes>\d*)'
+                                                            r'(?P<minutes>\d+)'
                                                             r'(?P<minutes_seconds_seperator>:)'
-                                                            r'(?P<seconds>\d*)'
-                                                            r'(?P<seconds_milliseconds_seperator>[:.])?'
-                                                            r'(?P<milliseconds>\d*)?'
+                                                            r'(?P<seconds>\d+)'
+                                                            r'(?P<seconds_milliseconds_seperator>[:.]?)'
+                                                            r'(?P<milliseconds>\d*)'
                                                             r'(?P<right_bracket>[]>])')
     # 非常宽松模式时间标签的正则表达式
-    TIME_TAB_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>[\[<])'
-                                                                 r'(?P<minutes>\d*)'
-                                                                 r'(?P<minutes_seconds_seperator>:)'
-                                                                 r'(?P<seconds>\d*)'
+    TIME_TAB_VERY_LOOSE_REGREX: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>[\[<]?)'
+                                                                 r'(?P<minutes>\d*?)'
+                                                                 r'(?P<minutes_seconds_seperator>:?)'
+                                                                 r'(?P<seconds>\d*?)'
                                                                  r'(?P<seconds_milliseconds_seperator>[:.])?'
-                                                                 r'(?P<milliseconds>\d*)?'
-                                                                 r'(?P<right_bracket>[]>])')
+                                                                 r'(?P<milliseconds>\d+)'
+                                                                 r'(?P<right_bracket>[]>]?)')
 
     # 正则表达式列表
-    TIME_TAB_DIFFERENT_MODE_REGREX: dict[str, Pattern[str]] = dict({
+    TIME_TAB_MODE_REGREX_PAIR: bidict[str, Pattern[str]] = bidict({
         MODE_TYPE[0]: TIME_TAB_STRICT_REGREX,
         MODE_TYPE[1]: TIME_TAB_NORMAL_REGREX,
         MODE_TYPE[2]: TIME_TAB_LOOSE_REGREX,
         MODE_TYPE[3]: TIME_TAB_VERY_LOOSE_REGREX
     })
+
+    # 歌词每个字的时间标签的正则表达式 []
+    # 严格模式时间标签的正则表达式
+    TIME_TAB_STRICT_REGREX_SQUARE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                             r'(?P<minutes>\d{2})'
+                                                                             r'(?P<minutes_seconds_seperator>:)'
+                                                                             r'(?P<seconds>\d{2})'
+                                                                             r'(?P<seconds_milliseconds_seperator>\.)'
+                                                                             r'(?P<milliseconds>\d{2})'
+                                                                             r'(?P<right_bracket>])')
+    # 普通模式时间标签的正则表达式
+    TIME_TAB_NORMAL_REGREX_SQUARE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                             r'(?P<minutes>\d{2})'
+                                                                             r'(?P<minutes_seconds_seperator>:)'
+                                                                             r'(?P<seconds>\d{2})'
+                                                                             r'(?P<seconds_milliseconds_seperator>[:.])'
+                                                                             r'(?P<milliseconds>\d{2,3})'
+                                                                             r'(?P<right_bracket>])')
+    # 宽松模式时间标签的正则表达式
+    TIME_TAB_LOOSE_REGREX_SQUARE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[)'
+                                                                            r'(?P<minutes>\d+)'
+                                                                            r'(?P<minutes_seconds_seperator>:)'
+                                                                            r'(?P<seconds>\d+)'
+                                                                            r'(?P<seconds_milliseconds_seperator>[:.]?)'
+                                                                            r'(?P<milliseconds>\d*)'
+                                                                            r'(?P<right_bracket>])')
+    # 非常宽松模式时间标签的正则表达式
+    TIME_TAB_VERY_LOOSE_REGREX_SQUARE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket>\[?)'
+                                                                                 r'(?P<minutes>\d*?)'
+                                                                                 r'(?P<minutes_seconds_seperator>:?)'
+                                                                                 r'(?P<seconds>\d*?)'
+                                                                                 r'(?P<seconds_milliseconds_seperator>'
+                                                                                 r'[:.])?'
+                                                                                 r'(?P<milliseconds>\d+)'
+                                                                                 r'(?P<right_bracket>]?)')
+
+    # 正则表达式列表
+    TIME_TAB_MODE_REGREX_PAIR_SQUARE_BRACKETS: bidict[str, Pattern[str]] = bidict({
+        MODE_TYPE[0]: TIME_TAB_STRICT_REGREX_SQUARE_BRACKETS,
+        MODE_TYPE[1]: TIME_TAB_NORMAL_REGREX_SQUARE_BRACKETS,
+        MODE_TYPE[2]: TIME_TAB_LOOSE_REGREX_SQUARE_BRACKETS,
+        MODE_TYPE[3]: TIME_TAB_VERY_LOOSE_REGREX_SQUARE_BRACKETS
+    })
+
+    # 歌词每个字的时间标签的正则表达式 <>
+    TIME_TAB_STRICT_REGREX_ANGLE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                            r'(?P<minutes>\d{2})'
+                                                                            r'(?P<minutes_seconds_seperator>:)'
+                                                                            r'(?P<seconds>\d{2})'
+                                                                            r'(?P<seconds_milliseconds_seperator>\.)'
+                                                                            r'(?P<milliseconds>\d{2})'
+                                                                            r'(?P<right_bracket>>)')
+    # 普通模式时间标签的正则表达式
+    TIME_TAB_NORMAL_REGREX_ANGLE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                            r'(?P<minutes>\d{2})'
+                                                                            r'(?P<minutes_seconds_seperator>:)'
+                                                                            r'(?P<seconds>\d{2})'
+                                                                            r'(?P<seconds_milliseconds_seperator>[:.])'
+                                                                            r'(?P<milliseconds>\d{2,3})'
+                                                                            r'(?P<right_bracket>>)')
+    # 宽松模式时间标签的正则表达式
+    TIME_TAB_LOOSE_REGREX_ANGLE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><)'
+                                                                           r'(?P<minutes>\d+)'
+                                                                           r'(?P<minutes_seconds_seperator>:)'
+                                                                           r'(?P<seconds>\d+)'
+                                                                           r'(?P<seconds_milliseconds_seperator>[:.]?)'
+                                                                           r'(?P<milliseconds>\d*)'
+                                                                           r'(?P<right_bracket>>)')
+    # 非常宽松模式时间标签的正则表达式
+    TIME_TAB_VERY_LOOSE_REGREX_ANGLE_BRACKETS: Final[Pattern[str]] = re.compile(r'(?P<left_bracket><?)'
+                                                                                r'(?P<minutes>\d*?)'
+                                                                                r'(?P<minutes_seconds_seperator>:?)'
+                                                                                r'(?P<seconds>\d*?)'
+                                                                                r'(?P<seconds_milliseconds_seperator>'
+                                                                                r'[:.]?)'
+                                                                                r'(?P<milliseconds>\d+)'
+                                                                                r'(?P<right_bracket>>?)')
+
+    # 正则表达式列表
+    TIME_TAB_MODE_REGREX_PAIR_ANGLE_BRACKETS: bidict[str, Pattern[str]] = bidict({
+        MODE_TYPE[0]: TIME_TAB_STRICT_REGREX_ANGLE_BRACKETS,
+        MODE_TYPE[1]: TIME_TAB_NORMAL_REGREX_ANGLE_BRACKETS,
+        MODE_TYPE[2]: TIME_TAB_LOOSE_REGREX_ANGLE_BRACKETS,
+        MODE_TYPE[3]: TIME_TAB_VERY_LOOSE_REGREX_ANGLE_BRACKETS
+    })
+
 
     # Final[bidict[str, str]]
     # noinspection PyTypeChecker
@@ -153,10 +238,9 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
     接受一个时间标签字符串，分离出时间标签的各个部分
     """
 
-    def __init__(self,
-                 tab: Optional[str | UserString],
-                 mode: Union[tuple[str, Optional[Pattern[str]]], list[str, Optional[Pattern[str]]]] = ('normal', None)
-                 ) -> None:
+    def __init__(self, tab: Optional[str | UserString],
+                 mode: Union[tuple[str, Optional[Pattern[str]]], list[str, Optional[Pattern[str]]]] = (
+                 'normal', None)) -> None:
         """
         中文注释：
         接受一个时间标签字符串，分离出时间标签的各个部分
@@ -170,6 +254,8 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
         self._original_time_tab: Optional[str] = tab
         # 时间标签字符串
         self._current_time_tab: Optional[str] = tab
+        super().__init__(self._current_time_tab)
+
         # 模式 + 自定义正则表达式
         self._mode: tuple[str, Optional[Pattern[str]]] = mode
 
@@ -219,13 +305,30 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
     def __int__(self):
         return self.get_millisecond_time_stamp()
 
-    # 返回时间标签字符串
-    def __str__(self):
-        return self._current_time_tab
+    # str is same as the self.current_time_tab
+    # Inherited from UserString
+
+    # hash is not inherited from UserString
+    # if __eq__ is defined, hash is disabled default
+    # Use int to hash, time same then object same
+    def __hash__(self):
+        return hash(self.time_stamp)
 
     # 返回时间标签列表
     def __repr__(self):
-        return self._current_time_tab
+        return self.current_time_tab
+
+    def is_empty(self) -> bool:
+        """
+        中文：
+        判断是否为空
+
+        English:
+        Determine if it is empty
+
+        :return: 是否为空 Whether it is empty
+        """
+        return self._current_time_tab is None
 
     """
     预分离标签，判断是否合法，分离出时间标签的各个部分，储存到类的属性中，供其他方法调用
@@ -275,11 +378,11 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
             self._match_result = self.mode[1].match(self.current_time_tab)
 
         # 匹配结果（粗处理）
-        self._match_result = self.TIME_TAB_DIFFERENT_MODE_REGREX[self.mode[0]].match(self.current_time_tab)
+        self._match_result = self.TIME_TAB_MODE_REGREX_PAIR[self.mode[0]].match(self.current_time_tab)
 
         # ================== 判断是否合法 ==================
         if self._match_result is None:
-            raise ValueError('Time tab is not valid: ' + self.current_time_tab + "under mode: " + self.mode[0])
+            raise ValueError('Time tab is not valid: ' + self.current_time_tab + " under mode: " + self.mode[0])
 
         # ================== 分离时间/分隔符/括号 ==================
         # 添加到类的属性中
@@ -339,7 +442,7 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
                 warnings.warn('Mode is not "self_defined", self_defined_regex must be None')
             else:
                 pass
-        else:
+        elif self.mode[0] in set(self.MODE_TYPE).remove(r'self_defined'):
             if isinstance(self.mode[0], Pattern):
                 # check whether the group name is correct
                 # 检查组名是否正确
@@ -350,6 +453,9 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
                                      should contain ' + str(self.SELF_DEFINED_GROUP_NAME))
             else:
                 raise TypeError('Mode is "self_defined", self_defined_regex must be Pattern[str]')
+        else:
+            raise ValueError('Mode must be in ' + str(self.MODE_TYPE))
+
 
     def get_millisecond_time_stamp(self) -> float:
         """
@@ -391,6 +497,7 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
         # str 则是字符串相关都可以，包括 UserString
         var_type_guard(value, (str, UserString))
         self._current_time_tab = value
+        # 也会重置data
         self._initialize_time_tab()
 
     @property
@@ -594,6 +701,71 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
         :return: 规范的时间戳 The standard time stamp
         """
         return int(self.time_stamp.total_seconds())
+
+    @staticmethod
+    def match_under_mode(time_tab: str, mode: list[str, Optional[Pattern[str]]]) -> Optional[Match[str]]:
+        """
+        中文：
+        判断时间标签是否合法
+
+        English:
+        Determine if the time label is valid
+
+        :param time_tab: 时间标签 The time label
+        :param mode: 模式 The mode
+        :return: 是否合法 Whether it is valid
+        """
+        #   ================== 类型检查 🛂🛡️ ==================
+
+        # ------------------ time_tab ------------------
+        # str 则是字符串相关都可以，包括 UserString
+        var_type_guard(time_tab, (str, UserString))
+
+        # ------------------ mode ------------------
+        # mode 必须是 str + self_defined_regex
+        var_type_guard(mode, (list,))
+
+        # 解包
+        mode_type: str
+        self_defined_regex: Optional[Pattern[str]]
+        mode_type, self_defined_regex = mode
+
+        # 必须是 strict, normal, loose, very_loose 或者 self_defined
+        if mode_type in set(LyricTimeTab.MODE_TYPE).remove(r'self_defined'):
+            if self_defined_regex is not None:
+                # warning
+                warnings.warn('Mode is not "self_defined", self_defined_regex must be None')
+            else:
+                pass
+        else:
+            if isinstance(self_defined_regex, Pattern):
+                # check whether the group name is correct
+                # 检查组名是否正确
+                if LyricTimeTab.SELF_DEFINED_GROUP_NAME.issubset(tuple(self_defined_regex.groupindex.keys())):
+                    pass
+                else:
+                    raise ValueError('The group name of self_defined_regex is not correct; \
+                                     should contain ' + str(LyricTimeTab.SELF_DEFINED_GROUP_NAME))
+            else:
+                raise TypeError('Mode is "self_defined", self_defined_regex must be Pattern[str]')
+
+        # ================== 判断是否合法 ==================
+        # 正则
+        if mode_type == LyricTimeTab.MODE_TYPE[4]:
+            match_regex = self_defined_regex
+        else:
+            match_regex = LyricTimeTab.TIME_TAB_MODE_REGREX_PAIR[mode_type]
+
+        # 匹配
+        match_result: Optional[Match[str]] = match_regex.match(time_tab)
+
+        # ================== 返回 ==================
+        return match_result
+
+
+    @staticmethod
+    def is_valid_under_mode(time_tab: str, mode: list[str, Optional[Pattern[str]]]) -> bool:
+        return LyricTimeTab.match_under_mode(time_tab, mode) is not None
 
     class __OperatorIntFloadGuard(object):
         def __init__(self, operator_name: str):
@@ -890,6 +1062,33 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
                                                                  (self.minutes_seconds_seperator,
                                                                   self.seconds_milliseconds_seperator)
                                                                  )
+    def convert_to_time_tab_standard(self,
+                                     brackets: Optional[tuple[str, str]]
+                                     ) -> str:
+        """
+        中文：
+        将时间戳转为标准时间标签
+
+        English:
+        Convert the time stamp to a standard time tag
+
+        :param brackets: 括号 The brackets
+        :return: 时间标签 The time tag
+        """
+        # 如果time stamp是None，返回空字符串，表明没有时间标签
+        if self.time_stamp is None:
+            raise ValueError("Not Initialized Time Stamp")
+        else:
+            return self.convert_time_tab_to_time_tab_classmethod(self.time_stamp,
+                                                                 self.min_len_of_minutes,
+                                                                 self.min_len_of_seconds,
+                                                                 self.min_len_of_millisecond,
+                                                                 self.cut_off_millisecond,
+                                                                 brackets,
+                                                                 (self.minutes_seconds_seperator,
+                                                                  self.seconds_milliseconds_seperator)
+                                                                 )
+
 
     # 返回自身
     def shift_time(self,
@@ -968,7 +1167,7 @@ class LyricTimeTab(Comparable, Calculable, BinaryCalculable):
         并且补全括号，分隔符 
         如果brackets为None，括号默认是 按照左括号配对(pair_left_brackets) 
         否则按照右括号配对 
-        左括号不在[[, <]中的任何一个，则默认为[ 
+        左括号不在[[, <]中的任何一个，则默认为 [
         返回规范化后的自身
 
         English: 
@@ -1032,5 +1231,20 @@ if __name__ == '__main__':
 
     # 测试时间标签 += 运算符
     time_tab = LyricTimeTab("[00:00.00]", ('normal', "None"))
+    # Check the next inheritance class in the inheritance chain
+    print(time_tab.__class__.__mro__)
+    print(time_tab.data)
+
     time_tab = time_tab + 1
     print(time_tab.convert_to_time_tab_base_on_inner_param())
+    time_tab -= 1
+
+
+
+    time_tab_1 = LyricTimeTab("00:00.0000>", ('very_loose', "None"))
+    print(int(time_tab), int(time_tab_1))
+    print(time_tab == time_tab_1)
+
+    print({LyricTimeTab("<00:00.0000>", ('very_loose', None)), time_tab}
+          == {LyricTimeTab("<00:00.0000>", ('very_loose', None)), time_tab_1}
+          )

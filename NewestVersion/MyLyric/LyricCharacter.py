@@ -1,7 +1,6 @@
 from collections import UserString
 
 from bidict import bidict
-from typing_extensions import LiteralString
 
 from LyricTimeTab import LyricTimeTab
 from typing import Optional, Final
